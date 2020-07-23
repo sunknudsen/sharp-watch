@@ -51,7 +51,7 @@ if (!program.fit.match(/^(cover|contain|fill|inside|outside)$/)) {
   process.exit(1)
 }
 
-const resize = async function(fullPath: string, batch: boolean = false) {
+const resize = async function (fullPath: string, batch: boolean = false) {
   if (!batch) {
     console.info("Resizing image...")
   }
@@ -79,7 +79,7 @@ const resize = async function(fullPath: string, batch: boolean = false) {
   }
 }
 
-const remove = async function(fullPath: string) {
+const remove = async function (fullPath: string) {
   try {
     console.info("Removing resized image...")
     const extension = path.extname(fullPath)
@@ -113,7 +113,7 @@ if (program.watch) {
     .on("unlink", remove)
 }
 
-const run = async function() {
+const run = async function () {
   const options: ReaddirpOptions = {
     fileFilter: fileFilter,
   }
