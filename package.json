@@ -1,6 +1,6 @@
 {
   "name": "sharp-watch",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Resize images in folder recursively using sharp.",
   "engines": {
     "node": ">=10.17.0"
@@ -11,11 +11,11 @@
   "main": "build/index.js",
   "dependencies": {
     "chalk": "^4.1.0",
-    "chokidar": "^3.4.1",
-    "commander": "^6.0.0",
+    "chokidar": "^3.4.3",
+    "commander": "^6.2.0",
     "fs-extra": "^9.0.1",
-    "readdirp": "^3.4.0",
-    "sharp": "^0.25.4"
+    "readdirp": "^3.5.0",
+    "sharp": "^0.26.2"
   },
   "scripts": {
     "start": "node build/index.js",
@@ -35,11 +35,11 @@
     "png"
   ],
   "devDependencies": {
-    "@types/fs-extra": "^9.0.1",
-    "@types/node": "^14.0.24",
-    "@types/sharp": "^0.25.1",
-    "npm-check-updates": "^7.0.2",
-    "typescript": "^3.9.7"
+    "@types/fs-extra": "^9.0.4",
+    "@types/node": "^14.14.7",
+    "@types/sharp": "^0.26.1",
+    "npm-check-updates": "^10.0.0",
+    "typescript": "^4.0.5"
   },
   "repository": {
     "type": "git",
