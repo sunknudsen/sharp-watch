@@ -1,107 +1,218 @@
 "use strict"
 
-import program from "commander"
+import program, {
+  Option as CommanderOption,
+  InvalidOptionArgumentError as CommanderInvalidOptionError,
+} from "commander"
 import chokidar from "chokidar"
 import path from "path"
 import readdirp, { ReaddirpOptions } from "readdirp"
-import { promisify } from "util"
 import fs from "fs-extra"
-import sharp from "sharp"
+import sharp, { fit, format, FitEnum, FormatEnum } from "sharp"
 import chalk from "chalk"
+import inquirer from "inquirer"
 
-const unlinkAsync = promisify(fs.unlink)
-const removeAsync = promisify(fs.remove)
-const ensureDirAsync = promisify(fs.ensureDir)
+const sharpFits = Object.keys(fit).sort()
+const sharpFormats = Object.keys(format).sort()
+
+const filterChoices = [...sharpFormats]
+filterChoices.push("jpg")
+filterChoices.sort()
+
+const parseFilter = function (value: string) {
+  const filters: string[] = value.split(",")
+  for (const filter of filters) {
+    if (filterChoices.indexOf(filter) === -1) {
+      throw new CommanderInvalidOptionError("Invalid filter")
+    }
+  }
+  return value
+}
+
+const parseSizes = function (value: string) {
+  const sizes: string[] = value.split(",")
+  for (const size of sizes) {
+    if (!size.match(/^[0-9]+x[0-9]+$/)) {
+      throw new CommanderInvalidOptionError("Invalid sizes")
+    }
+  }
+  return value
+}
+
+const parseQuality = function (value: string) {
+  const quality = parseInt(value)
+  if (quality < 0 || quality > 100) {
+    throw new CommanderInvalidOptionError("Invalid quality")
+  }
+  return value
+}
+
+interface SharpWatchOptions {
+  src: string
+  filter: string
+  sizes: string
+  fit: keyof FitEnum
+  withoutEnlargement?: boolean
+  format?: keyof FormatEnum
+  quality?: string
+  dest?: string
+  purge?: boolean
+  watch?: boolean
+  verbose?: boolean
+  yes?: boolean
+}
 
 program
   .requiredOption("--src <source>", "path to image folder")
+  .addOption(
+    new CommanderOption(
+      "--filter <filter>",
+      "filter used to select which image formats will be resized"
+    )
+      .choices(filterChoices)
+      .argParser(parseFilter)
+      .default("gif,jpeg,jpg,png,webp")
+  )
   .requiredOption(
     "--sizes <sizes>",
-    'sizes at which images should be resized (example: "1280x720,1920x1080")'
+    'sizes at which images will be resized (example: "640x360,1280x720,1920x1080")',
+    parseSizes
   )
-  .option("--fit <fit>", "selected fit for images within size", "outside")
-  .option("--without-enlargement", "disable image enlargement")
+  .option("--without-enlargement", "do not enlarge images")
+  .addOption(
+    new CommanderOption("--fit <fit>", "fit at which images will be resized")
+      .choices(sharpFits)
+      .default("outside")
+  )
+  .addOption(
+    new CommanderOption(
+      "--format <format>",
+      "format at which images will be transcoded"
+    ).choices(sharpFormats)
+  )
+  .option(
+    "--quality <quality>",
+    "quality at which images will be transcoded",
+    parseQuality,
+    "80"
+  )
   .option(
     "--dest <destination>",
     "path to resized image folder (default: source)"
   )
-  .option("--purge", "purge resized images before running")
+  .option("--purge", "purge resized image folder")
   .option("--watch", "watch source for changes")
+  .option("--verbose", "show more debug info")
+  .option("--yes", "skip confirmation prompt")
 
 program.parse(process.argv)
 
-const src = path.resolve(process.cwd(), program.src)
+const options = program.opts() as SharpWatchOptions
 
-const dest = program.dest ? path.resolve(process.cwd(), program.dest) : src
+const optionsSrc = path.resolve(process.cwd(), options.src)
+if (!fs.existsSync(optionsSrc)) {
+  throw new Error("Source folder doesn’t exist")
+}
+const optionsFilter = options.filter.split(",")
+const optionsSizes = options.sizes.split(",")
+const optionsWithoutEnlargement = options.withoutEnlargement
+const optionsFit = options.fit
+const optionsFormat = options.format
+const optionsQuality = parseInt(options.quality)
+const optionsDest = options.dest
+  ? path.resolve(process.cwd(), options.dest)
+  : optionsSrc
+const optionsPurge = options.purge
+const optionsWatch = options.watch
+const optionsVerbose = options.verbose
+const optionsYes = options.yes
 
-const fileFilter = ["*.jpg", "*.png", "*.webp"]
-
-const resizedImageRegExp = /-[0-9]+x[0-9]+\.(jpg|png|webp)$/
-
-var sizes: string[] = program.sizes.split(",")
-for (const size of sizes) {
-  if (!size.match(/^[0-9]+x[0-9]+$/)) {
-    console.error(chalk.red("Invalid sizes"))
-    process.exit(1)
-  }
+const fileFilters: string[] = []
+for (const format of optionsFilter) {
+  fileFilters.push(`*${format}`)
 }
 
-if (!program.fit.match(/^(cover|contain|fill|inside|outside)$/)) {
-  console.error(chalk.red("Invalid fit"))
-  process.exit(1)
-}
+const resizedImageRegExp = new RegExp(
+  `-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`
+)
 
 const resize = async function (fullPath: string, batch: boolean = false) {
-  if (!batch) {
-    console.info("Resizing image...")
-  }
-  const extension = path.extname(fullPath)
-  const relativePath = path.relative(src, fullPath)
-  const relativeDirectoryName = path.dirname(relativePath)
-  for (const size of sizes) {
-    const destinationPath = path.resolve(
-      dest,
-      relativePath.replace(extension, `-${size}${extension}`)
-    )
-    // Check if file exits and, if so, skip
-    if (!fs.existsSync(destinationPath)) {
-      await ensureDirAsync(path.resolve(dest, relativeDirectoryName), null)
-      await sharp(fullPath)
-        .resize(parseInt(size.split("x")[0]), parseInt(size.split("x")[1]), {
-          fit: program.fit,
-          withoutEnlargement: program.withoutEnlargement,
-        })
-        .toFile(destinationPath)
+  try {
+    if (!batch) {
+      console.info("Resizing image…")
     }
-  }
-  if (!batch) {
-    console.info(chalk.green("Resized image successfully!"))
+    const extension = path.extname(fullPath)
+    const relativePath = path.relative(optionsSrc, fullPath)
+    const relativeDirectoryName = path.dirname(relativePath)
+    for (const size of optionsSizes) {
+      const destinationPath = path.resolve(
+        optionsDest,
+        relativePath.replace(extension, `-${size}${extension}`)
+      )
+      // Check if file exits and, if so, skip
+      if (!fs.existsSync(destinationPath)) {
+        await fs.ensureDir(path.resolve(optionsDest, relativeDirectoryName))
+        const image = sharp(fullPath).resize(
+          parseInt(size.split("x")[0]),
+          parseInt(size.split("x")[1]),
+          {
+            fit: optionsFit,
+            withoutEnlargement: optionsWithoutEnlargement,
+          }
+        )
+        if (optionsFormat) {
+          await image
+            .toFormat(optionsFormat, {
+              quality: optionsQuality,
+            })
+            .toFile(
+              destinationPath.replace(/\.[a-zA-Z]{2,4}$/, `.${optionsFormat}`)
+            )
+        } else {
+          await image.toFile(destinationPath)
+        }
+      }
+    }
+    if (!batch) {
+      console.info(chalk.green("Resized image successfully!"))
+    }
+  } catch (error) {
+    if (optionsVerbose) {
+      throw error
+    } else {
+      console.error(chalk.red(error.message))
+      process.exit(1)
+    }
   }
 }
 
 const remove = async function (fullPath: string) {
   try {
-    console.info("Removing resized image...")
+    console.info("Removing resized image…")
     const extension = path.extname(fullPath)
-    const relativePath = path.relative(src, fullPath)
-    for (const size of sizes) {
+    const relativePath = path.relative(optionsSrc, fullPath)
+    for (const size of optionsSizes) {
       const destinationPath = path.resolve(
-        dest,
+        optionsDest,
         relativePath.replace(extension, `-${size}${extension}`)
       )
-      await unlinkAsync(destinationPath)
+      await fs.unlink(destinationPath)
     }
     console.info(chalk.green("Removed resized image successfully!"))
   } catch (error) {
-    console.error(chalk.red(error))
-    process.exit(1)
+    if (optionsVerbose) {
+      throw error
+    } else {
+      console.error(chalk.red(error.message))
+      process.exit(1)
+    }
   }
 }
 
-if (program.watch) {
+if (optionsWatch) {
   let paths: string[] = []
-  for (const filter of fileFilter) {
-    paths.push(`${src}/**/${filter}`)
+  for (const fileFilter of fileFilters) {
+    paths.push(`${optionsSrc}/**/${fileFilter}`)
   }
   chokidar
     .watch(paths, {
@@ -114,37 +225,57 @@ if (program.watch) {
 }
 
 const run = async function () {
-  const options: ReaddirpOptions = {
-    fileFilter: fileFilter,
-  }
-  if (program.purge) {
-    if (dest !== src) {
-      await removeAsync(dest)
-    } else {
-      for await (const file of readdirp(src, options)) {
-        if (file.basename.match(resizedImageRegExp)) {
-          await unlinkAsync(file.fullPath)
+  try {
+    const readdirOptions: ReaddirpOptions = {
+      fileFilter: fileFilters,
+    }
+    let confirmation: boolean
+    if (optionsPurge) {
+      console.info(`Purging ${chalk.bold(optionsDest)}…`)
+      if (optionsYes) {
+        confirmation = true
+      } else {
+        const answers = await inquirer.prompt([
+          {
+            type: "confirm",
+            message: "Do you wish to proceed?",
+            name: "confirmation",
+            default: false,
+          },
+        ])
+        confirmation = answers.confirmation
+      }
+      if (confirmation !== true) {
+        console.info(chalk.yellow("Purged cancelled!"))
+      } else {
+        if (optionsDest !== optionsSrc) {
+          await fs.emptyDir(optionsDest)
+        } else {
+          for await (const file of readdirp(optionsDest, readdirOptions)) {
+            if (file.basename.match(resizedImageRegExp)) {
+              await fs.unlink(file.fullPath)
+            }
+          }
         }
+        console.info(
+          chalk.green(`Purged ${chalk.bold(optionsDest)} successfully!`)
+        )
       }
     }
-  }
-  try {
-    if (!fs.existsSync(src)) {
-      throw new Error("Source doesn’t exist")
-    }
-    console.info("Resizing images...")
-    const options: ReaddirpOptions = {
-      fileFilter: fileFilter,
-    }
-    for await (const file of readdirp(src, options)) {
+    console.info("Resizing images…")
+    for await (const file of readdirp(optionsSrc, readdirOptions)) {
       if (!file.basename.match(resizedImageRegExp)) {
         await resize(file.fullPath, true)
       }
     }
     console.info(chalk.green("Resized images successfully!"))
   } catch (error) {
-    console.error(chalk.red(error.message))
-    process.exit(1)
+    if (optionsVerbose) {
+      throw error
+    } else {
+      console.error(chalk.red(error.message))
+      process.exit(1)
+    }
   }
 }
 
