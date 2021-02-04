@@ -42,6 +42,9 @@ const sharpFormats = Object.keys(sharp_1.format).sort();
 const filterChoices = [...sharpFormats];
 filterChoices.push("jpg");
 filterChoices.sort();
+const formatChoices = [...sharpFormats];
+formatChoices.push("original");
+formatChoices.sort();
 const parseFilter = function (value) {
     const filters = value.split(",");
     for (const filter of filters) {
@@ -60,6 +63,15 @@ const parseSizes = function (value) {
     }
     return value;
 };
+const parseFormats = function (value) {
+    const formats = value.split(",");
+    for (const format of formats) {
+        if (formatChoices.indexOf(format) === -1) {
+            throw new commander_1.InvalidOptionArgumentError("Invalid format");
+        }
+    }
+    return value;
+};
 const parseQuality = function (value) {
     const quality = parseInt(value);
     if (quality < 0 || quality > 100) {
@@ -73,12 +85,15 @@ commander_1.default
     .choices(filterChoices)
     .argParser(parseFilter)
     .default("gif,jpeg,jpg,png,webp"))
-    .requiredOption("--sizes <sizes>", 'sizes at which images will be resized (example: "640x360,1280x720,1920x1080")', parseSizes)
+    .requiredOption("--sizes <sizes>", "sizes at which images will be resized (example: 640x360,1280x720,1920x1080)", parseSizes)
     .option("--without-enlargement", "do not enlarge images")
     .addOption(new commander_1.Option("--fit <fit>", "fit at which images will be resized")
     .choices(sharpFits)
     .default("outside"))
-    .addOption(new commander_1.Option("--format <format>", "format at which images will be transcoded").choices(sharpFormats))
+    .addOption(new commander_1.Option("--formats <formats>", "formats at which images will be transcoded")
+    .choices(formatChoices)
+    .argParser(parseFormats)
+    .default("original,webp"))
     .option("--quality <quality>", "quality at which images will be transcoded", parseQuality, "80")
     .option("--dest <destination>", "path to resized image folder (default: source)")
     .option("--purge", "purge resized image folder")
@@ -88,14 +103,14 @@ commander_1.default
 commander_1.default.parse(process.argv);
 const options = commander_1.default.opts();
 const optionsSrc = path_1.default.resolve(process.cwd(), options.src);
-if (!fs_extra_1.default.existsSync(optionsSrc)) {
+if (fs_extra_1.default.existsSync(optionsSrc) === false) {
     throw new Error("Source folder doesn’t exist");
 }
 const optionsFilter = options.filter.split(",");
 const optionsSizes = options.sizes.split(",");
 const optionsWithoutEnlargement = options.withoutEnlargement;
 const optionsFit = options.fit;
-const optionsFormat = options.format;
+const optionsFormats = options.formats.split(",");
 const optionsQuality = parseInt(options.quality);
 const optionsDest = options.dest
     ? path_1.default.resolve(process.cwd(), options.dest)
@@ -109,36 +124,45 @@ for (const format of optionsFilter) {
     fileFilters.push(`*${format}`);
 }
 const resizedImageRegExp = new RegExp(`-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`);
+const getDestinationPath = function (extension, format, relativePath, size) {
+    const extensionRegExp = new RegExp(`${extension}$`);
+    let destinationPath;
+    if (format && format !== "original") {
+        destinationPath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}.${format}`));
+    }
+    else {
+        destinationPath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}${extension}`));
+    }
+    return destinationPath;
+};
 const resize = async function (fullPath, batch = false) {
     try {
-        if (!batch) {
+        if (batch === false) {
             console.info("Resizing image…");
         }
         const extension = path_1.default.extname(fullPath);
         const relativePath = path_1.default.relative(optionsSrc, fullPath);
         const relativeDirectoryName = path_1.default.dirname(relativePath);
         for (const size of optionsSizes) {
-            const destinationPath = path_1.default.resolve(optionsDest, relativePath.replace(extension, `-${size}${extension}`));
-            // Check if file exits and, if so, skip
-            if (!fs_extra_1.default.existsSync(destinationPath)) {
-                await fs_extra_1.default.ensureDir(path_1.default.resolve(optionsDest, relativeDirectoryName));
-                const image = sharp_1.default(fullPath).resize(parseInt(size.split("x")[0]), parseInt(size.split("x")[1]), {
-                    fit: optionsFit,
-                    withoutEnlargement: optionsWithoutEnlargement,
-                });
-                if (optionsFormat) {
-                    await image
-                        .toFormat(optionsFormat, {
-                        quality: optionsQuality,
-                    })
-                        .toFile(destinationPath.replace(/\.[a-zA-Z]{2,4}$/, `.${optionsFormat}`));
-                }
-                else {
+            for (const format of optionsFormats) {
+                const destinationPath = getDestinationPath(extension, format, relativePath, size);
+                // Check if file exits and, if so, skip
+                if (fs_extra_1.default.existsSync(destinationPath) === false) {
+                    await fs_extra_1.default.ensureDir(path_1.default.resolve(optionsDest, relativeDirectoryName));
+                    const image = sharp_1.default(fullPath).resize(parseInt(size.split("x")[0]), parseInt(size.split("x")[1]), {
+                        fit: optionsFit,
+                        withoutEnlargement: optionsWithoutEnlargement,
+                    });
+                    if (format && format !== "original") {
+                        image.toFormat(format, {
+                            quality: optionsQuality,
+                        });
+                    }
                     await image.toFile(destinationPath);
                 }
             }
         }
-        if (!batch) {
+        if (batch === false) {
             console.info(chalk_1.default.green("Resized image successfully!"));
         }
     }
@@ -158,8 +182,10 @@ const remove = async function (fullPath) {
         const extension = path_1.default.extname(fullPath);
         const relativePath = path_1.default.relative(optionsSrc, fullPath);
         for (const size of optionsSizes) {
-            const destinationPath = path_1.default.resolve(optionsDest, relativePath.replace(extension, `-${size}${extension}`));
-            await fs_extra_1.default.unlink(destinationPath);
+            for (const format of optionsFormats) {
+                const destinationPath = getDestinationPath(extension, format, relativePath, size);
+                await fs_extra_1.default.unlink(destinationPath);
+            }
         }
         console.info(chalk_1.default.green("Removed resized image successfully!"));
     }

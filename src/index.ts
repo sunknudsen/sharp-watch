@@ -15,9 +15,17 @@ import inquirer from "inquirer"
 const sharpFits = Object.keys(fit).sort()
 const sharpFormats = Object.keys(format).sort()
 
+type Filter = keyof FormatEnum | "jpg"
+
 const filterChoices = [...sharpFormats]
 filterChoices.push("jpg")
 filterChoices.sort()
+
+type Format = keyof FormatEnum | "original"
+
+const formatChoices = [...sharpFormats]
+formatChoices.push("original")
+formatChoices.sort()
 
 const parseFilter = function (value: string) {
   const filters: string[] = value.split(",")
@@ -39,6 +47,16 @@ const parseSizes = function (value: string) {
   return value
 }
 
+const parseFormats = function (value: string) {
+  const formats: string[] = value.split(",")
+  for (const format of formats) {
+    if (formatChoices.indexOf(format) === -1) {
+      throw new CommanderInvalidOptionError("Invalid format")
+    }
+  }
+  return value
+}
+
 const parseQuality = function (value: string) {
   const quality = parseInt(value)
   if (quality < 0 || quality > 100) {
@@ -51,9 +69,9 @@ interface SharpWatchOptions {
   src: string
   filter: string
   sizes: string
-  fit: keyof FitEnum
   withoutEnlargement?: boolean
-  format?: keyof FormatEnum
+  fit: string
+  formats?: string
   quality?: string
   dest?: string
   purge?: boolean
@@ -75,7 +93,7 @@ program
   )
   .requiredOption(
     "--sizes <sizes>",
-    'sizes at which images will be resized (example: "640x360,1280x720,1920x1080")',
+    "sizes at which images will be resized (example: 640x360,1280x720,1920x1080)",
     parseSizes
   )
   .option("--without-enlargement", "do not enlarge images")
@@ -86,9 +104,12 @@ program
   )
   .addOption(
     new CommanderOption(
-      "--format <format>",
-      "format at which images will be transcoded"
-    ).choices(sharpFormats)
+      "--formats <formats>",
+      "formats at which images will be transcoded"
+    )
+      .choices(formatChoices)
+      .argParser(parseFormats)
+      .default("original,webp")
   )
   .option(
     "--quality <quality>",
@@ -110,14 +131,14 @@ program.parse(process.argv)
 const options = program.opts() as SharpWatchOptions
 
 const optionsSrc = path.resolve(process.cwd(), options.src)
-if (!fs.existsSync(optionsSrc)) {
+if (fs.existsSync(optionsSrc) === false) {
   throw new Error("Source folder doesn’t exist")
 }
-const optionsFilter = options.filter.split(",")
+const optionsFilter = options.filter.split(",") as Filter[]
 const optionsSizes = options.sizes.split(",")
 const optionsWithoutEnlargement = options.withoutEnlargement
-const optionsFit = options.fit
-const optionsFormat = options.format
+const optionsFit = options.fit as keyof FitEnum
+const optionsFormats = options.formats.split(",") as Format[]
 const optionsQuality = parseInt(options.quality)
 const optionsDest = options.dest
   ? path.resolve(process.cwd(), options.dest)
@@ -136,44 +157,65 @@ const resizedImageRegExp = new RegExp(
   `-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`
 )
 
+const getDestinationPath = function (
+  extension: string,
+  format: string,
+  relativePath: string,
+  size: string
+) {
+  const extensionRegExp = new RegExp(`${extension}$`)
+  let destinationPath: string
+  if (format && format !== "original") {
+    destinationPath = path.resolve(
+      optionsDest,
+      relativePath.replace(extensionRegExp, `-${size}.${format}`)
+    )
+  } else {
+    destinationPath = path.resolve(
+      optionsDest,
+      relativePath.replace(extensionRegExp, `-${size}${extension}`)
+    )
+  }
+  return destinationPath
+}
+
 const resize = async function (fullPath: string, batch: boolean = false) {
   try {
-    if (!batch) {
+    if (batch === false) {
       console.info("Resizing image…")
     }
     const extension = path.extname(fullPath)
     const relativePath = path.relative(optionsSrc, fullPath)
     const relativeDirectoryName = path.dirname(relativePath)
     for (const size of optionsSizes) {
-      const destinationPath = path.resolve(
-        optionsDest,
-        relativePath.replace(extension, `-${size}${extension}`)
-      )
-      // Check if file exits and, if so, skip
-      if (!fs.existsSync(destinationPath)) {
-        await fs.ensureDir(path.resolve(optionsDest, relativeDirectoryName))
-        const image = sharp(fullPath).resize(
-          parseInt(size.split("x")[0]),
-          parseInt(size.split("x")[1]),
-          {
-            fit: optionsFit,
-            withoutEnlargement: optionsWithoutEnlargement,
-          }
+      for (const format of optionsFormats) {
+        const destinationPath = getDestinationPath(
+          extension,
+          format,
+          relativePath,
+          size
         )
-        if (optionsFormat) {
-          await image
-            .toFormat(optionsFormat, {
+        // Check if file exits and, if so, skip
+        if (fs.existsSync(destinationPath) === false) {
+          await fs.ensureDir(path.resolve(optionsDest, relativeDirectoryName))
+          const image = sharp(fullPath).resize(
+            parseInt(size.split("x")[0]),
+            parseInt(size.split("x")[1]),
+            {
+              fit: optionsFit,
+              withoutEnlargement: optionsWithoutEnlargement,
+            }
+          )
+          if (format && format !== "original") {
+            image.toFormat(format, {
               quality: optionsQuality,
             })
-            .toFile(
-              destinationPath.replace(/\.[a-zA-Z]{2,4}$/, `.${optionsFormat}`)
-            )
-        } else {
+          }
           await image.toFile(destinationPath)
         }
       }
     }
-    if (!batch) {
+    if (batch === false) {
       console.info(chalk.green("Resized image successfully!"))
     }
   } catch (error) {
@@ -192,11 +234,15 @@ const remove = async function (fullPath: string) {
     const extension = path.extname(fullPath)
     const relativePath = path.relative(optionsSrc, fullPath)
     for (const size of optionsSizes) {
-      const destinationPath = path.resolve(
-        optionsDest,
-        relativePath.replace(extension, `-${size}${extension}`)
-      )
-      await fs.unlink(destinationPath)
+      for (const format of optionsFormats) {
+        const destinationPath = getDestinationPath(
+          extension,
+          format,
+          relativePath,
+          size
+        )
+        await fs.unlink(destinationPath)
+      }
     }
     console.info(chalk.green("Removed resized image successfully!"))
   } catch (error) {
