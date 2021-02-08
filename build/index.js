@@ -176,16 +176,28 @@ const upsertMetadata = async function (resizedFullPath, image, outputInfo, blurh
         blurhash: blurhash,
     };
 };
-const getBlurhash = async function (image) {
-    const sharpMetadata = await image.metadata();
+const getDivisor = function (number, gt) {
+    let divisor = 1;
+    while (divisor <= number) {
+        divisor++;
+        if (number / divisor < gt) {
+            break;
+        }
+    }
+    return divisor;
+};
+const getBlurhash = async function (image, width, height) {
+    const divisor = getDivisor(width, 20);
     const { data, info } = await image
-        .raw()
-        .ensureAlpha()
-        .resize(Math.round(sharpMetadata.width / 10), Math.round(sharpMetadata.height / 10), {
+        .resize(Math.round(width / divisor), Math.round(height / divisor), {
         fit: optionsFit,
+        withoutEnlargement: optionsWithoutEnlargement,
     })
+        .ensureAlpha()
+        .raw()
         .toBuffer({ resolveWithObject: true });
-    return await blurhash_1.encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+    const blurhash = await blurhash_1.encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+    return blurhash;
 };
 const deleteMetadata = async function (resizedFullPath) {
     const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath);
@@ -208,12 +220,14 @@ const resize = async function (fullPath, batch = false) {
                 // Check if file exits and, if so, skip
                 if (fs_extra_1.default.existsSync(resizedImagePath) === false) {
                     await fs_extra_1.default.ensureDir(path_1.default.resolve(optionsDest, relativeDirectoryName));
+                    const width = parseInt(size.split("x")[0]);
+                    const height = parseInt(size.split("x")[1]);
                     const image = sharp_1.default(fullPath);
-                    const imageBlurhash = image.clone();
-                    image.resize(parseInt(size.split("x")[0]), parseInt(size.split("x")[1]), {
+                    image.resize(width, height, {
                         fit: optionsFit,
                         withoutEnlargement: optionsWithoutEnlargement,
                     });
+                    const imageBlurhash = image.clone();
                     if (format && format !== "original") {
                         image.toFormat(format, {
                             quality: optionsQuality,
@@ -223,7 +237,7 @@ const resize = async function (fullPath, batch = false) {
                     if (optionsMeta === true) {
                         let blurhash = undefined;
                         if (optionsMetaBlurhash === true) {
-                            blurhash = await getBlurhash(imageBlurhash);
+                            blurhash = await getBlurhash(imageBlurhash, width, height);
                         }
                         await upsertMetadata(resizedImagePath, image, outputInfo, blurhash);
                     }

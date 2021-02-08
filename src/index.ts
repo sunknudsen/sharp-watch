@@ -24,6 +24,8 @@ import inquirer from "inquirer"
 const sharpFits = Object.keys(fit).sort()
 const sharpFormats = Object.keys(format).sort()
 
+type Fit = keyof FitEnum
+
 type Filter = keyof FormatEnum | "jpg"
 
 const filterChoices = [...sharpFormats]
@@ -155,7 +157,7 @@ if (fs.existsSync(optionsSrc) === false) {
 const optionsFilter = options.filter.split(",") as Filter[]
 const optionsSizes = options.sizes.split(",")
 const optionsWithoutEnlargement = options.withoutEnlargement
-const optionsFit = options.fit as keyof FitEnum
+const optionsFit = options.fit as Fit
 const optionsFormats = options.formats.split(",") as Format[]
 const optionsQuality = parseInt(options.quality)
 const optionsDest = options.dest
@@ -262,26 +264,39 @@ const upsertMetadata = async function (
   }
 }
 
-const getBlurhash = async function (image: Sharp) {
-  const sharpMetadata = await image.metadata()
+const getDivisor = function (number: number, gt: number) {
+  let divisor = 1
+  while (divisor <= number) {
+    divisor++
+    if (number / divisor < gt) {
+      break
+    }
+  }
+  return divisor
+}
+
+const getBlurhash = async function (
+  image: Sharp,
+  width: number,
+  height: number
+) {
+  const divisor = getDivisor(width, 20)
   const { data, info } = await image
-    .raw()
+    .resize(Math.round(width / divisor), Math.round(height / divisor), {
+      fit: optionsFit,
+      withoutEnlargement: optionsWithoutEnlargement,
+    })
     .ensureAlpha()
-    .resize(
-      Math.round(sharpMetadata.width / 10),
-      Math.round(sharpMetadata.height / 10),
-      {
-        fit: optionsFit,
-      }
-    )
+    .raw()
     .toBuffer({ resolveWithObject: true })
-  return await encode(
+  const blurhash = await encode(
     new Uint8ClampedArray(data),
     info.width,
     info.height,
     4,
     4
   )
+  return blurhash
 }
 
 const deleteMetadata = async function (resizedFullPath: string) {
@@ -312,16 +327,14 @@ const resize = async function (fullPath: string, batch: boolean = false) {
         // Check if file exits and, if so, skip
         if (fs.existsSync(resizedImagePath) === false) {
           await fs.ensureDir(path.resolve(optionsDest, relativeDirectoryName))
+          const width = parseInt(size.split("x")[0])
+          const height = parseInt(size.split("x")[1])
           const image = sharp(fullPath)
+          image.resize(width, height, {
+            fit: optionsFit,
+            withoutEnlargement: optionsWithoutEnlargement,
+          })
           const imageBlurhash = image.clone()
-          image.resize(
-            parseInt(size.split("x")[0]),
-            parseInt(size.split("x")[1]),
-            {
-              fit: optionsFit,
-              withoutEnlargement: optionsWithoutEnlargement,
-            }
-          )
           if (format && format !== "original") {
             image.toFormat(format, {
               quality: optionsQuality,
@@ -331,7 +344,7 @@ const resize = async function (fullPath: string, batch: boolean = false) {
           if (optionsMeta === true) {
             let blurhash: string | undefined = undefined
             if (optionsMetaBlurhash === true) {
-              blurhash = await getBlurhash(imageBlurhash)
+              blurhash = await getBlurhash(imageBlurhash, width, height)
             }
             await upsertMetadata(resizedImagePath, image, outputInfo, blurhash)
           }
