@@ -8,7 +8,16 @@ import chokidar from "chokidar"
 import path from "path"
 import readdirp, { ReaddirpOptions } from "readdirp"
 import fs from "fs-extra"
-import sharp, { fit, format, FitEnum, FormatEnum } from "sharp"
+import sharp, {
+  fit,
+  format,
+  FitEnum,
+  FormatEnum,
+  Sharp,
+  OutputInfo,
+} from "sharp"
+import { createHash } from "crypto"
+import { encode } from "blurhash"
 import chalk from "chalk"
 import inquirer from "inquirer"
 
@@ -74,6 +83,9 @@ interface SharpWatchOptions {
   formats?: string
   quality?: string
   dest?: string
+  meta?: boolean
+  metaBlurhash?: boolean
+  metaDest?: string
   purge?: boolean
   watch?: boolean
   verbose?: boolean
@@ -121,6 +133,12 @@ program
     "--dest <destination>",
     "path to resized image folder (default: source)"
   )
+  .option("--meta", "compute resized image metadata")
+  .option("--meta-blurhash", "compute image blurhash")
+  .option(
+    "--meta-dest <destination>",
+    "path to resized image metadata file (default: source/metadata.json)"
+  )
   .option("--purge", "purge resized image folder")
   .option("--watch", "watch source for changes")
   .option("--verbose", "show more debug info")
@@ -143,6 +161,11 @@ const optionsQuality = parseInt(options.quality)
 const optionsDest = options.dest
   ? path.resolve(process.cwd(), options.dest)
   : optionsSrc
+const optionsMeta = options.meta
+const optionsMetaBlurhash = options.metaBlurhash
+const optionsMetaDest = options.metaDest
+  ? path.resolve(process.cwd(), options.metaDest)
+  : `${optionsSrc}/metadata.json`
 const optionsPurge = options.purge
 const optionsWatch = options.watch
 const optionsVerbose = options.verbose
@@ -157,26 +180,117 @@ const resizedImageRegExp = new RegExp(
   `-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`
 )
 
-const getDestinationPath = function (
+const getResizedImagePath = function (
   extension: string,
   format: string,
   relativePath: string,
   size: string
 ) {
   const extensionRegExp = new RegExp(`${extension}$`)
-  let destinationPath: string
+  let resizedImagePath: string
   if (format && format !== "original") {
-    destinationPath = path.resolve(
+    resizedImagePath = path.resolve(
       optionsDest,
       relativePath.replace(extensionRegExp, `-${size}.${format}`)
     )
   } else {
-    destinationPath = path.resolve(
+    resizedImagePath = path.resolve(
       optionsDest,
       relativePath.replace(extensionRegExp, `-${size}${extension}`)
     )
   }
-  return destinationPath
+  return resizedImagePath
+}
+
+const getRelativeResizedImagePath = function (resizedImagePath: string) {
+  return resizedImagePath.replace(`${optionsDest}/`, "")
+}
+
+interface RGBColor {
+  r: number
+  g: number
+  b: number
+}
+
+const getHexColor = function (rgbColor: RGBColor) {
+  const { r, g, b } = rgbColor
+  return (
+    "#" +
+    [r, g, b]
+      .map((x) => {
+        const hex = x.toString(16)
+        return hex.length === 1 ? "0" + hex : hex
+      })
+      .join("")
+  )
+}
+
+interface Metadata {
+  [index: string]: {
+    width: number
+    height: number
+    ratio: number
+    fileSize: number
+    contentHash: string
+    color: string
+    blurhash?: string
+  }
+}
+
+const metadata: Metadata = {}
+
+const upsertMetadata = async function (
+  resizedFullPath: string,
+  image: Sharp,
+  outputInfo: OutputInfo,
+  blurhash?: string
+) {
+  const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath)
+  const resizedImage = await fs.readFile(resizedFullPath)
+  const { dominant } = await image.stats()
+  metadata[relativeDestinationPath] = {
+    width: outputInfo.width,
+    height: outputInfo.height,
+    ratio: outputInfo.width / outputInfo.height,
+    fileSize: outputInfo.size,
+    contentHash: createHash("md4")
+      .update(resizedImage)
+      .digest("hex")
+      .slice(0, 8),
+    color: getHexColor(dominant),
+    blurhash: blurhash,
+  }
+}
+
+const getBlurhash = async function (image: Sharp) {
+  const sharpMetadata = await image.metadata()
+  const { data, info } = await image
+    .raw()
+    .ensureAlpha()
+    .resize(
+      Math.round(sharpMetadata.width / 10),
+      Math.round(sharpMetadata.height / 10),
+      {
+        fit: optionsFit,
+      }
+    )
+    .toBuffer({ resolveWithObject: true })
+  return await encode(
+    new Uint8ClampedArray(data),
+    info.width,
+    info.height,
+    4,
+    4
+  )
+}
+
+const deleteMetadata = async function (resizedFullPath: string) {
+  const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath)
+  delete metadata[relativeDestinationPath]
+}
+
+const writeMetadata = async function () {
+  await fs.writeFile(optionsMetaDest, JSON.stringify(metadata, null, 2))
 }
 
 const resize = async function (fullPath: string, batch: boolean = false) {
@@ -189,16 +303,18 @@ const resize = async function (fullPath: string, batch: boolean = false) {
     const relativeDirectoryName = path.dirname(relativePath)
     for (const size of optionsSizes) {
       for (const format of optionsFormats) {
-        const destinationPath = getDestinationPath(
+        const resizedImagePath = getResizedImagePath(
           extension,
           format,
           relativePath,
           size
         )
         // Check if file exits and, if so, skip
-        if (fs.existsSync(destinationPath) === false) {
+        if (fs.existsSync(resizedImagePath) === false) {
           await fs.ensureDir(path.resolve(optionsDest, relativeDirectoryName))
-          const image = sharp(fullPath).resize(
+          const image = sharp(fullPath)
+          const imageBlurhash = image.clone()
+          image.resize(
             parseInt(size.split("x")[0]),
             parseInt(size.split("x")[1]),
             {
@@ -211,11 +327,21 @@ const resize = async function (fullPath: string, batch: boolean = false) {
               quality: optionsQuality,
             })
           }
-          await image.toFile(destinationPath)
+          const outputInfo = await image.toFile(resizedImagePath)
+          if (optionsMeta === true) {
+            let blurhash: string | undefined = undefined
+            if (optionsMetaBlurhash === true) {
+              blurhash = await getBlurhash(imageBlurhash)
+            }
+            await upsertMetadata(resizedImagePath, image, outputInfo, blurhash)
+          }
         }
       }
     }
     if (batch === false) {
+      if (optionsMeta === true) {
+        await writeMetadata()
+      }
       console.info(chalk.green("Resized image successfully!"))
     }
   } catch (error) {
@@ -235,14 +361,20 @@ const remove = async function (fullPath: string) {
     const relativePath = path.relative(optionsSrc, fullPath)
     for (const size of optionsSizes) {
       for (const format of optionsFormats) {
-        const destinationPath = getDestinationPath(
+        const resizedImagePath = getResizedImagePath(
           extension,
           format,
           relativePath,
           size
         )
-        await fs.unlink(destinationPath)
+        await fs.unlink(resizedImagePath)
+        if (optionsMeta === true) {
+          await deleteMetadata(resizedImagePath)
+        }
       }
+    }
+    if (optionsMeta === true) {
+      await writeMetadata()
     }
     console.info(chalk.green("Removed resized image successfully!"))
   } catch (error) {
@@ -313,6 +445,9 @@ const run = async function () {
       if (!file.basename.match(resizedImageRegExp)) {
         await resize(file.fullPath, true)
       }
+    }
+    if (optionsMeta === true) {
+      await writeMetadata()
     }
     console.info(chalk.green("Resized images successfully!"))
   } catch (error) {

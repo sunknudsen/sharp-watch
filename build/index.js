@@ -35,6 +35,8 @@ const path_1 = __importDefault(require("path"));
 const readdirp_1 = __importDefault(require("readdirp"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const sharp_1 = __importStar(require("sharp"));
+const crypto_1 = require("crypto");
+const blurhash_1 = require("blurhash");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
 const sharpFits = Object.keys(sharp_1.fit).sort();
@@ -96,6 +98,9 @@ commander_1.default
     .default("original,webp"))
     .option("--quality <quality>", "quality at which images will be transcoded", parseQuality, "80")
     .option("--dest <destination>", "path to resized image folder (default: source)")
+    .option("--meta", "compute resized image metadata")
+    .option("--meta-blurhash", "compute image blurhash")
+    .option("--meta-dest <destination>", "path to resized image metadata file (default: source/metadata.json)")
     .option("--purge", "purge resized image folder")
     .option("--watch", "watch source for changes")
     .option("--verbose", "show more debug info")
@@ -115,6 +120,11 @@ const optionsQuality = parseInt(options.quality);
 const optionsDest = options.dest
     ? path_1.default.resolve(process.cwd(), options.dest)
     : optionsSrc;
+const optionsMeta = options.meta;
+const optionsMetaBlurhash = options.metaBlurhash;
+const optionsMetaDest = options.metaDest
+    ? path_1.default.resolve(process.cwd(), options.metaDest)
+    : `${optionsSrc}/metadata.json`;
 const optionsPurge = options.purge;
 const optionsWatch = options.watch;
 const optionsVerbose = options.verbose;
@@ -124,16 +134,65 @@ for (const format of optionsFilter) {
     fileFilters.push(`*${format}`);
 }
 const resizedImageRegExp = new RegExp(`-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`);
-const getDestinationPath = function (extension, format, relativePath, size) {
+const getResizedImagePath = function (extension, format, relativePath, size) {
     const extensionRegExp = new RegExp(`${extension}$`);
-    let destinationPath;
+    let resizedImagePath;
     if (format && format !== "original") {
-        destinationPath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}.${format}`));
+        resizedImagePath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}.${format}`));
     }
     else {
-        destinationPath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}${extension}`));
+        resizedImagePath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}${extension}`));
     }
-    return destinationPath;
+    return resizedImagePath;
+};
+const getRelativeResizedImagePath = function (resizedImagePath) {
+    return resizedImagePath.replace(`${optionsDest}/`, "");
+};
+const getHexColor = function (rgbColor) {
+    const { r, g, b } = rgbColor;
+    return ("#" +
+        [r, g, b]
+            .map((x) => {
+            const hex = x.toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        })
+            .join(""));
+};
+const metadata = {};
+const upsertMetadata = async function (resizedFullPath, image, outputInfo, blurhash) {
+    const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath);
+    const resizedImage = await fs_extra_1.default.readFile(resizedFullPath);
+    const { dominant } = await image.stats();
+    metadata[relativeDestinationPath] = {
+        width: outputInfo.width,
+        height: outputInfo.height,
+        ratio: outputInfo.width / outputInfo.height,
+        fileSize: outputInfo.size,
+        contentHash: crypto_1.createHash("md4")
+            .update(resizedImage)
+            .digest("hex")
+            .slice(0, 8),
+        color: getHexColor(dominant),
+        blurhash: blurhash,
+    };
+};
+const getBlurhash = async function (image) {
+    const sharpMetadata = await image.metadata();
+    const { data, info } = await image
+        .raw()
+        .ensureAlpha()
+        .resize(Math.round(sharpMetadata.width / 10), Math.round(sharpMetadata.height / 10), {
+        fit: optionsFit,
+    })
+        .toBuffer({ resolveWithObject: true });
+    return await blurhash_1.encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+};
+const deleteMetadata = async function (resizedFullPath) {
+    const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath);
+    delete metadata[relativeDestinationPath];
+};
+const writeMetadata = async function () {
+    await fs_extra_1.default.writeFile(optionsMetaDest, JSON.stringify(metadata, null, 2));
 };
 const resize = async function (fullPath, batch = false) {
     try {
@@ -145,11 +204,13 @@ const resize = async function (fullPath, batch = false) {
         const relativeDirectoryName = path_1.default.dirname(relativePath);
         for (const size of optionsSizes) {
             for (const format of optionsFormats) {
-                const destinationPath = getDestinationPath(extension, format, relativePath, size);
+                const resizedImagePath = getResizedImagePath(extension, format, relativePath, size);
                 // Check if file exits and, if so, skip
-                if (fs_extra_1.default.existsSync(destinationPath) === false) {
+                if (fs_extra_1.default.existsSync(resizedImagePath) === false) {
                     await fs_extra_1.default.ensureDir(path_1.default.resolve(optionsDest, relativeDirectoryName));
-                    const image = sharp_1.default(fullPath).resize(parseInt(size.split("x")[0]), parseInt(size.split("x")[1]), {
+                    const image = sharp_1.default(fullPath);
+                    const imageBlurhash = image.clone();
+                    image.resize(parseInt(size.split("x")[0]), parseInt(size.split("x")[1]), {
                         fit: optionsFit,
                         withoutEnlargement: optionsWithoutEnlargement,
                     });
@@ -158,11 +219,21 @@ const resize = async function (fullPath, batch = false) {
                             quality: optionsQuality,
                         });
                     }
-                    await image.toFile(destinationPath);
+                    const outputInfo = await image.toFile(resizedImagePath);
+                    if (optionsMeta === true) {
+                        let blurhash = undefined;
+                        if (optionsMetaBlurhash === true) {
+                            blurhash = await getBlurhash(imageBlurhash);
+                        }
+                        await upsertMetadata(resizedImagePath, image, outputInfo, blurhash);
+                    }
                 }
             }
         }
         if (batch === false) {
+            if (optionsMeta === true) {
+                await writeMetadata();
+            }
             console.info(chalk_1.default.green("Resized image successfully!"));
         }
     }
@@ -183,9 +254,15 @@ const remove = async function (fullPath) {
         const relativePath = path_1.default.relative(optionsSrc, fullPath);
         for (const size of optionsSizes) {
             for (const format of optionsFormats) {
-                const destinationPath = getDestinationPath(extension, format, relativePath, size);
-                await fs_extra_1.default.unlink(destinationPath);
+                const resizedImagePath = getResizedImagePath(extension, format, relativePath, size);
+                await fs_extra_1.default.unlink(resizedImagePath);
+                if (optionsMeta === true) {
+                    await deleteMetadata(resizedImagePath);
+                }
             }
+        }
+        if (optionsMeta === true) {
+            await writeMetadata();
         }
         console.info(chalk_1.default.green("Removed resized image successfully!"));
     }
@@ -278,6 +355,9 @@ const run = async function () {
                 if (_f && !_f.done && (_b = _e.return)) await _b.call(_e);
             }
             finally { if (e_2) throw e_2.error; }
+        }
+        if (optionsMeta === true) {
+            await writeMetadata();
         }
         console.info(chalk_1.default.green("Resized images successfully!"));
     }
