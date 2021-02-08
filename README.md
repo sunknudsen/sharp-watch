@@ -124,14 +124,15 @@ example-resized
 └── metadata.json
 
 $ cat example-resized/metadata.json
-{  "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-640x360.jpg": {
+{
+  "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-640x360.jpg": {
     "width": 640,
     "height": 960,
     "ratio": 0.6666666666666666,
     "fileSize": 28098,
     "contentHash": "08fd2cea",
     "color": "#f8d8d8",
-    "blurhash": "UYQu:9}tIUso_iEzn%jZKObIs:WVrrn%X8kC"
+    "blurhash": "UjQu:9}[RP%2{1J7ayniODW;s:WoxaoLbbkC"
   },
   "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-640x360.webp": {
     "width": 640,
@@ -140,7 +141,7 @@ $ cat example-resized/metadata.json
     "fileSize": 10568,
     "contentHash": "6e0a14e6",
     "color": "#f8d8d8",
-    "blurhash": "UYQu:9}tIUso_iEzn%jZKObIs:WVrrn%X8kC"
+    "blurhash": "UjQu:9}[RP%2{1J7ayniODW;s:WoxaoLbbkC"
   },
   "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-1280x720.jpg": {
     "width": 1280,
@@ -149,7 +150,7 @@ $ cat example-resized/metadata.json
     "fileSize": 93109,
     "contentHash": "aec7607d",
     "color": "#f8d8d8",
-    "blurhash": "UYQu:9}tIUso_iEzn%jZKObIs:WVrrn%X8kC"
+    "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
   },
   "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-1280x720.webp": {
     "width": 1280,
@@ -158,7 +159,7 @@ $ cat example-resized/metadata.json
     "fileSize": 30500,
     "contentHash": "93f2a8b8",
     "color": "#f8d8d8",
-    "blurhash": "UYQu:9}tIUso_iEzn%jZKObIs:WVrrn%X8kC"
+    "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
   },
   "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-1920x1080.jpg": {
     "width": 1920,
@@ -167,7 +168,7 @@ $ cat example-resized/metadata.json
     "fileSize": 220456,
     "contentHash": "a69a3cdf",
     "color": "#f8d8d8",
-    "blurhash": "UYQu:9}tIUso_iEzn%jZKObIs:WVrrn%X8kC"
+    "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
   },
   "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash-1920x1080.webp": {
     "width": 1920,
@@ -176,7 +177,7 @@ $ cat example-resized/metadata.json
     "fileSize": 64920,
     "contentHash": "0b197338",
     "color": "#f8d8d8",
-    "blurhash": "UYQu:9}tIUso_iEzn%jZKObIs:WVrrn%X8kC"
+    "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
   },
   "jonathan-gallegos-PgHc0Ka1E0A-unsplash-640x360.png": {
     "width": 640,
@@ -185,7 +186,7 @@ $ cat example-resized/metadata.json
     "fileSize": 757615,
     "contentHash": "48c8ff0d",
     "color": "#080808",
-    "blurhash": "U[HVh:M_fQoz_NaxfPj[t7tRj[WBs:fka|ae"
+    "blurhash": "U^HL_6RPaet8_NjZayofxutRkCWBt7kCfkae"
   },
   "jonathan-gallegos-PgHc0Ka1E0A-unsplash-640x360.webp": {
     "width": 640,
@@ -194,7 +195,7 @@ $ cat example-resized/metadata.json
     "fileSize": 36118,
     "contentHash": "aafcb051",
     "color": "#080808",
-    "blurhash": "U[HVh:M_fQoz_NaxfPj[t7tRj[WBs:fka|ae"
+    "blurhash": "U^HL_6RPaet8_NjZayofxutRkCWBt7kCfkae"
   },
   "jonathan-gallegos-PgHc0Ka1E0A-unsplash-1280x720.png": {
     "width": 915,
@@ -203,7 +204,7 @@ $ cat example-resized/metadata.json
     "fileSize": 1491315,
     "contentHash": "3ab1abfc",
     "color": "#080808",
-    "blurhash": "U[HVh:M_fQoz_NaxfPj[t7tRj[WBs:fka|ae"
+    "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
   },
   "jonathan-gallegos-PgHc0Ka1E0A-unsplash-1280x720.webp": {
     "width": 915,
@@ -212,7 +213,7 @@ $ cat example-resized/metadata.json
     "fileSize": 72308,
     "contentHash": "75345407",
     "color": "#080808",
-    "blurhash": "U[HVh:M_fQoz_NaxfPj[t7tRj[WBs:fka|ae"
+    "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
   },
   "jonathan-gallegos-PgHc0Ka1E0A-unsplash-1920x1080.png": {
     "width": 915,
@@ -221,7 +222,7 @@ $ cat example-resized/metadata.json
     "fileSize": 1491315,
     "contentHash": "3ab1abfc",
     "color": "#080808",
-    "blurhash": "U[HVh:M_fQoz_NaxfPj[t7tRj[WBs:fka|ae"
+    "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
   },
   "jonathan-gallegos-PgHc0Ka1E0A-unsplash-1920x1080.webp": {
     "width": 915,
@@ -230,7 +231,7 @@ $ cat example-resized/metadata.json
     "fileSize": 72308,
     "contentHash": "75345407",
     "color": "#080808",
-    "blurhash": "U[HVh:M_fQoz_NaxfPj[t7tRj[WBs:fka|ae"
+    "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
   },
   "foo/michael-james-IEbeDBPeIfs-unsplash-640x360.jpg": {
     "width": 640,
@@ -239,7 +240,7 @@ $ cat example-resized/metadata.json
     "fileSize": 49207,
     "contentHash": "85c3c1b2",
     "color": "#282828",
-    "blurhash": "UgF6OYxuM{ay_4WBoJj[_Nt7oLj[?bfjofay"
+    "blurhash": "UhEMdwxuRPkC_4ofaeof_Nt7jZof_Nt7axof"
   },
   "foo/michael-james-IEbeDBPeIfs-unsplash-640x360.webp": {
     "width": 640,
@@ -248,7 +249,7 @@ $ cat example-resized/metadata.json
     "fileSize": 40458,
     "contentHash": "d77ab9ab",
     "color": "#282828",
-    "blurhash": "UgF6OYxuM{ay_4WBoJj[_Nt7oLj[?bfjofay"
+    "blurhash": "UhEMdwxuRPkC_4ofaeof_Nt7jZof_Nt7axof"
   },
   "foo/michael-james-IEbeDBPeIfs-unsplash-1280x720.jpg": {
     "width": 1280,
@@ -257,7 +258,7 @@ $ cat example-resized/metadata.json
     "fileSize": 187403,
     "contentHash": "cf682d4c",
     "color": "#282828",
-    "blurhash": "UgF6OYxuM{ay_4WBoJj[_Nt7oLj[?bfjofay"
+    "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
   },
   "foo/michael-james-IEbeDBPeIfs-unsplash-1280x720.webp": {
     "width": 1280,
@@ -266,7 +267,7 @@ $ cat example-resized/metadata.json
     "fileSize": 156304,
     "contentHash": "e67aa80f",
     "color": "#282828",
-    "blurhash": "UgF6OYxuM{ay_4WBoJj[_Nt7oLj[?bfjofay"
+    "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
   },
   "foo/michael-james-IEbeDBPeIfs-unsplash-1920x1080.jpg": {
     "width": 1920,
@@ -275,7 +276,7 @@ $ cat example-resized/metadata.json
     "fileSize": 413933,
     "contentHash": "93af2d7e",
     "color": "#282828",
-    "blurhash": "UgF6OYxuM{ay_4WBoJj[_Nt7oLj[?bfjofay"
+    "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
   },
   "foo/michael-james-IEbeDBPeIfs-unsplash-1920x1080.webp": {
     "width": 1920,
@@ -284,7 +285,7 @@ $ cat example-resized/metadata.json
     "fileSize": 335364,
     "contentHash": "8621c62c",
     "color": "#282828",
-    "blurhash": "UgF6OYxuM{ay_4WBoJj[_Nt7oLj[?bfjofay"
+    "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
   },
   "foo/bar/courtney-read-EWhLexezAkA-unsplash-640x360.jpg": {
     "width": 640,
@@ -293,7 +294,7 @@ $ cat example-resized/metadata.json
     "fileSize": 47505,
     "contentHash": "60237a34",
     "color": "#282828",
-    "blurhash": "U%FF~qfla#j]_4fkWVj[%MfkWBj[adjtWBj["
+    "blurhash": "U:F6e2oza#oz_4ofWVof-;kCWBofxaj[WBj["
   },
   "foo/bar/courtney-read-EWhLexezAkA-unsplash-640x360.webp": {
     "width": 640,
@@ -302,7 +303,7 @@ $ cat example-resized/metadata.json
     "fileSize": 38920,
     "contentHash": "b1fa8959",
     "color": "#282828",
-    "blurhash": "U%FF~qfla#j]_4fkWVj[%MfkWBj[adjtWBj["
+    "blurhash": "U:F6e2oza#oz_4ofWVof-;kCWBofxaj[WBj["
   },
   "foo/bar/courtney-read-EWhLexezAkA-unsplash-1280x720.jpg": {
     "width": 1280,
@@ -311,7 +312,7 @@ $ cat example-resized/metadata.json
     "fileSize": 180172,
     "contentHash": "35e19f7b",
     "color": "#282828",
-    "blurhash": "U%FF~qfla#j]_4fkWVj[%MfkWBj[adjtWBj["
+    "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
   },
   "foo/bar/courtney-read-EWhLexezAkA-unsplash-1280x720.webp": {
     "width": 1280,
@@ -320,7 +321,7 @@ $ cat example-resized/metadata.json
     "fileSize": 144966,
     "contentHash": "75111d84",
     "color": "#282828",
-    "blurhash": "U%FF~qfla#j]_4fkWVj[%MfkWBj[adjtWBj["
+    "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
   },
   "foo/bar/courtney-read-EWhLexezAkA-unsplash-1920x1080.jpg": {
     "width": 1920,
@@ -329,7 +330,7 @@ $ cat example-resized/metadata.json
     "fileSize": 388721,
     "contentHash": "3a7a711c",
     "color": "#282828",
-    "blurhash": "U%FF~qfla#j]_4fkWVj[%MfkWBj[adjtWBj["
+    "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
   },
   "foo/bar/courtney-read-EWhLexezAkA-unsplash-1920x1080.webp": {
     "width": 1920,
@@ -338,7 +339,7 @@ $ cat example-resized/metadata.json
     "fileSize": 306514,
     "contentHash": "e03f199d",
     "color": "#282828",
-    "blurhash": "U%FF~qfla#j]_4fkWVj[%MfkWBj[adjtWBj["
+    "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
   }
 }
 ```
