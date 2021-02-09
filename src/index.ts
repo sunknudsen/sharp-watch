@@ -16,7 +16,7 @@ import sharp, {
   Sharp,
   OutputInfo,
 } from "sharp"
-import { createHash } from "crypto"
+import crypto from "crypto"
 import { encode } from "blurhash"
 import chalk from "chalk"
 import inquirer from "inquirer"
@@ -72,6 +72,13 @@ const parseQuality = function (value: string) {
   const quality = parseInt(value)
   if (quality < 0 || quality > 100) {
     throw new CommanderInvalidOptionError("Invalid quality")
+  }
+  return value
+}
+
+const parseMetaDest = function (value: string) {
+  if (!value.match(/\.json$/)) {
+    throw new CommanderInvalidOptionError("Invalid meta dest")
   }
   return value
 }
@@ -137,9 +144,11 @@ program
   )
   .option("--meta", "compute resized image metadata")
   .option("--meta-blurhash", "compute image blurhash")
-  .option(
-    "--meta-dest <destination>",
-    "path to resized image metadata file (default: source/metadata.json)"
+  .addOption(
+    new CommanderOption(
+      "--meta-dest <destination>",
+      "path to resized image metadata file (default: source/metadata.json)"
+    ).argParser(parseMetaDest)
   )
   .option("--purge", "purge resized image folder")
   .option("--watch", "watch source for changes")
@@ -181,6 +190,26 @@ for (const format of optionsFilter) {
 const resizedImageRegExp = new RegExp(
   `-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`
 )
+
+interface Metadata {
+  [index: string]: {
+    width: number
+    height: number
+    ratio: number
+    fileSize: number
+    contentHash: string
+    color: string
+    blurhash?: string
+  }
+}
+
+const metadata: Metadata = {}
+
+if (!fs.existsSync(optionsMetaDest)) {
+  fs.ensureDir(path.dirname(optionsMetaDest))
+} else {
+  Object.assign(metadata, JSON.parse(fs.readFileSync(optionsMetaDest, "utf8")))
+}
 
 const getResizedImagePath = function (
   extension: string,
@@ -227,20 +256,6 @@ const getHexColor = function (rgbColor: RGBColor) {
   )
 }
 
-interface Metadata {
-  [index: string]: {
-    width: number
-    height: number
-    ratio: number
-    fileSize: number
-    contentHash: string
-    color: string
-    blurhash?: string
-  }
-}
-
-const metadata: Metadata = {}
-
 const upsertMetadata = async function (
   resizedFullPath: string,
   image: Sharp,
@@ -255,7 +270,8 @@ const upsertMetadata = async function (
     height: outputInfo.height,
     ratio: outputInfo.width / outputInfo.height,
     fileSize: outputInfo.size,
-    contentHash: createHash("md4")
+    contentHash: crypto
+      .createHash("md4")
       .update(resizedImage)
       .digest("hex")
       .slice(0, 8),

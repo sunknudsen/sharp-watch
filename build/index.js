@@ -35,7 +35,7 @@ const path_1 = __importDefault(require("path"));
 const readdirp_1 = __importDefault(require("readdirp"));
 const fs_extra_1 = __importDefault(require("fs-extra"));
 const sharp_1 = __importStar(require("sharp"));
-const crypto_1 = require("crypto");
+const crypto_1 = __importDefault(require("crypto"));
 const blurhash_1 = require("blurhash");
 const chalk_1 = __importDefault(require("chalk"));
 const inquirer_1 = __importDefault(require("inquirer"));
@@ -81,6 +81,12 @@ const parseQuality = function (value) {
     }
     return value;
 };
+const parseMetaDest = function (value) {
+    if (!value.match(/\.json$/)) {
+        throw new commander_1.InvalidOptionArgumentError("Invalid meta dest");
+    }
+    return value;
+};
 commander_1.default
     .requiredOption("--src <source>", "path to image folder")
     .addOption(new commander_1.Option("--filter <filter>", "filter used to select which image formats will be resized")
@@ -100,7 +106,7 @@ commander_1.default
     .option("--dest <destination>", "path to resized image folder (default: source)")
     .option("--meta", "compute resized image metadata")
     .option("--meta-blurhash", "compute image blurhash")
-    .option("--meta-dest <destination>", "path to resized image metadata file (default: source/metadata.json)")
+    .addOption(new commander_1.Option("--meta-dest <destination>", "path to resized image metadata file (default: source/metadata.json)").argParser(parseMetaDest))
     .option("--purge", "purge resized image folder")
     .option("--watch", "watch source for changes")
     .option("--verbose", "show more debug info")
@@ -134,6 +140,13 @@ for (const format of optionsFilter) {
     fileFilters.push(`*${format}`);
 }
 const resizedImageRegExp = new RegExp(`-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`);
+const metadata = {};
+if (!fs_extra_1.default.existsSync(optionsMetaDest)) {
+    fs_extra_1.default.ensureDir(path_1.default.dirname(optionsMetaDest));
+}
+else {
+    Object.assign(metadata, JSON.parse(fs_extra_1.default.readFileSync(optionsMetaDest, "utf8")));
+}
 const getResizedImagePath = function (extension, format, relativePath, size) {
     const extensionRegExp = new RegExp(`${extension}$`);
     let resizedImagePath;
@@ -158,7 +171,6 @@ const getHexColor = function (rgbColor) {
         })
             .join(""));
 };
-const metadata = {};
 const upsertMetadata = async function (resizedFullPath, image, outputInfo, blurhash) {
     const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath);
     const resizedImage = await fs_extra_1.default.readFile(resizedFullPath);
@@ -168,7 +180,8 @@ const upsertMetadata = async function (resizedFullPath, image, outputInfo, blurh
         height: outputInfo.height,
         ratio: outputInfo.width / outputInfo.height,
         fileSize: outputInfo.size,
-        contentHash: crypto_1.createHash("md4")
+        contentHash: crypto_1.default
+            .createHash("md4")
             .update(resizedImage)
             .digest("hex")
             .slice(0, 8),

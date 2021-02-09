@@ -1,6 +1,6 @@
 {
   "name": "sharp-watch",
-  "version": "0.1.0-beta.3",
+  "version": "0.1.0-beta.4",
   "description": "Resize images in folder recursively using sharp.",
   "engines": {
     "node": ">=10.23.2"

@@ -26,10 +26,10 @@ Usage: sharp-watch [options]
 Options:
   --src <source>             path to image folder
   --filter <filter>          filter used to select which image formats will be
-                             resized (choices: "dz", "fits", "gif", "heif", "jpeg",
-                             "jpg", "magick", "openslide", "pdf", "png", "ppm",
-                             "raw", "svg", "tiff", "vips", "webp", default:
-                             "gif,jpeg,jpg,png,webp")
+                             resized (choices: "dz", "fits", "gif", "heif",
+                             "jpeg", "jpg", "magick", "openslide", "pdf", "png",
+                             "ppm", "raw", "svg", "tiff", "vips", "webp",
+                             default: "gif,jpeg,jpg,png,webp")
   --sizes <sizes>            sizes at which images will be resized (example:
                              640x360,1280x720,1920x1080)
   --without-enlargement      do not enlarge images
