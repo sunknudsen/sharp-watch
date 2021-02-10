@@ -31,14 +31,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const commander_1 = __importStar(require("commander"));
 const chokidar_1 = __importDefault(require("chokidar"));
-const path_1 = __importDefault(require("path"));
+const path_1 = require("path");
 const readdirp_1 = __importDefault(require("readdirp"));
-const fs_extra_1 = __importDefault(require("fs-extra"));
+const fs_extra_1 = require("fs-extra");
 const sharp_1 = __importStar(require("sharp"));
-const crypto_1 = __importDefault(require("crypto"));
+const crypto_1 = require("crypto");
 const blurhash_1 = require("blurhash");
 const chalk_1 = __importDefault(require("chalk"));
-const inquirer_1 = __importDefault(require("inquirer"));
+const inquirer_1 = require("inquirer");
 const sharpFits = Object.keys(sharp_1.fit).sort();
 const sharpFormats = Object.keys(sharp_1.format).sort();
 const filterChoices = [...sharpFormats];
@@ -81,7 +81,7 @@ const parseQuality = function (value) {
     }
     return value;
 };
-const parseMetaDest = function (value) {
+const parseManifestDest = function (value) {
     if (!value.match(/\.json$/)) {
         throw new commander_1.InvalidOptionArgumentError("Invalid meta dest");
     }
@@ -93,44 +93,46 @@ commander_1.default
     .choices(filterChoices)
     .argParser(parseFilter)
     .default("gif,jpeg,jpg,png,webp"))
-    .requiredOption("--sizes <sizes>", "sizes at which images will be resized (example: 640x360,1280x720,1920x1080)", parseSizes)
-    .option("--without-enlargement", "do not enlarge images")
-    .addOption(new commander_1.Option("--fit <fit>", "fit at which images will be resized")
-    .choices(sharpFits)
-    .default("outside"))
     .addOption(new commander_1.Option("--formats <formats>", "formats at which images will be transcoded")
     .choices(formatChoices)
     .argParser(parseFormats)
     .default("original,webp"))
     .option("--quality <quality>", "quality at which images will be transcoded", parseQuality, "80")
+    .requiredOption("--sizes <sizes>", "sizes at which images will be resized (example: 640x360,1280x720,1920x1080)", parseSizes)
+    .option("--without-enlargement", "do not enlarge images")
+    .addOption(new commander_1.Option("--fit <fit>", "fit at which images will be resized")
+    .choices(sharpFits)
+    .default("outside"))
     .option("--dest <destination>", "path to resized image folder (default: source)")
-    .option("--meta", "compute resized image metadata")
-    .option("--meta-blurhash", "compute image blurhash")
-    .addOption(new commander_1.Option("--meta-dest <destination>", "path to resized image metadata file (default: source/metadata.json)").argParser(parseMetaDest))
+    .option("--content-hash", "append content hash to filenames")
+    .option("--manifest", "generate resized image manifest")
+    .addOption(new commander_1.Option("--manifest-dest <destination>", "path to resized image manifest file (default: source/manifest.json)").argParser(parseManifestDest))
+    .option("--blurhash", "compute image blurhash")
     .option("--purge", "purge resized image folder")
     .option("--watch", "watch source for changes")
     .option("--verbose", "show more debug info")
     .option("--yes", "skip confirmation prompt");
 commander_1.default.parse(process.argv);
 const options = commander_1.default.opts();
-const optionsSrc = path_1.default.resolve(process.cwd(), options.src);
-if (fs_extra_1.default.existsSync(optionsSrc) === false) {
+const optionsSrc = path_1.resolve(process.cwd(), options.src);
+if (fs_extra_1.existsSync(optionsSrc) === false) {
     throw new Error("Source folder doesn’t exist");
 }
 const optionsFilter = options.filter.split(",");
+const optionsFormats = options.formats.split(",");
+const optionsQuality = parseInt(options.quality);
 const optionsSizes = options.sizes.split(",");
 const optionsWithoutEnlargement = options.withoutEnlargement;
 const optionsFit = options.fit;
-const optionsFormats = options.formats.split(",");
-const optionsQuality = parseInt(options.quality);
 const optionsDest = options.dest
-    ? path_1.default.resolve(process.cwd(), options.dest)
+    ? path_1.resolve(process.cwd(), options.dest)
     : optionsSrc;
-const optionsMeta = options.meta;
-const optionsMetaBlurhash = options.metaBlurhash;
-const optionsMetaDest = options.metaDest
-    ? path_1.default.resolve(process.cwd(), options.metaDest)
-    : `${optionsSrc}/metadata.json`;
+const optionsContentHash = options.contentHash;
+const optionsManifest = options.manifest;
+const optionsManifestDest = options.manifestDest
+    ? path_1.resolve(process.cwd(), options.manifestDest)
+    : `${optionsSrc}/manifest.json`;
+const optionsBlurhash = options.blurhash;
 const optionsPurge = options.purge;
 const optionsWatch = options.watch;
 const optionsVerbose = options.verbose;
@@ -139,27 +141,35 @@ const fileFilters = [];
 for (const format of optionsFilter) {
     fileFilters.push(`*${format}`);
 }
-const resizedImageRegExp = new RegExp(`-[0-9]+x[0-9]+\\.(${optionsFilter.join("|")})$`);
-const metadata = {};
-if (!fs_extra_1.default.existsSync(optionsMetaDest)) {
-    fs_extra_1.default.ensureDir(path_1.default.dirname(optionsMetaDest));
+const resizedImageRegExp = new RegExp(`-[0-9]+x[0-9]+(\\.[a-f0-9]{8})?\\.(${optionsFilter.join("|")})$`);
+const manifest = {};
+if (!fs_extra_1.existsSync(optionsManifestDest)) {
+    fs_extra_1.ensureDir(path_1.dirname(optionsManifestDest));
 }
 else {
-    Object.assign(metadata, JSON.parse(fs_extra_1.default.readFileSync(optionsMetaDest, "utf8")));
+    Object.assign(manifest, JSON.parse(fs_extra_1.readFileSync(optionsManifestDest, "utf8")));
 }
-const getResizedImagePath = function (extension, format, relativePath, size) {
+const getResizedImagePath = function (path, format, size) {
+    const extension = path_1.extname(path);
     const extensionRegExp = new RegExp(`${extension}$`);
     let resizedImagePath;
     if (format && format !== "original") {
-        resizedImagePath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}.${format}`));
+        resizedImagePath = path.replace(extensionRegExp, `-${size}.${format}`);
     }
     else {
-        resizedImagePath = path_1.default.resolve(optionsDest, relativePath.replace(extensionRegExp, `-${size}${extension}`));
+        resizedImagePath = path.replace(extensionRegExp, `-${size}${extension}`);
     }
     return resizedImagePath;
 };
-const getRelativeResizedImagePath = function (resizedImagePath) {
-    return resizedImagePath.replace(`${optionsDest}/`, "");
+const getContentHashedImagePath = function (path, contentHash) {
+    const extension = path_1.extname(path);
+    const extensionRegExp = new RegExp(`${extension}$`);
+    return path.replace(extensionRegExp, `.${contentHash}${extension}`);
+};
+const getGlobedImagePath = function (path) {
+    const extension = path_1.extname(path);
+    const extensionRegExp = new RegExp(`${extension}$`);
+    return path.replace(extensionRegExp, `*${extension}`);
 };
 const getHexColor = function (rgbColor) {
     const { r, g, b } = rgbColor;
@@ -171,21 +181,22 @@ const getHexColor = function (rgbColor) {
         })
             .join(""));
 };
-const upsertMetadata = async function (resizedFullPath, image, outputInfo, blurhash) {
-    const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath);
-    const resizedImage = await fs_extra_1.default.readFile(resizedFullPath);
+const addToManifest = async function (path, format, size, image, outputInfo, contentHash, blurhash) {
     const { dominant } = await image.stats();
-    metadata[relativeDestinationPath] = {
+    const color = getHexColor(dominant);
+    if (!manifest[path]) {
+        manifest[path] = {};
+    }
+    if (!manifest[path][format]) {
+        manifest[path][format] = {};
+    }
+    manifest[path][format][size] = {
         width: outputInfo.width,
         height: outputInfo.height,
         ratio: outputInfo.width / outputInfo.height,
         fileSize: outputInfo.size,
-        contentHash: crypto_1.default
-            .createHash("md4")
-            .update(resizedImage)
-            .digest("hex")
-            .slice(0, 8),
-        color: getHexColor(dominant),
+        color: color,
+        contentHash: contentHash,
         blurhash: blurhash,
     };
 };
@@ -212,27 +223,55 @@ const getBlurhash = async function (image, width, height) {
     const blurhash = await blurhash_1.encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
     return blurhash;
 };
-const deleteMetadata = async function (resizedFullPath) {
-    const relativeDestinationPath = getRelativeResizedImagePath(resizedFullPath);
-    delete metadata[relativeDestinationPath];
+const removeFromManifest = async function (path) {
+    if (manifest[path]) {
+        delete manifest[path];
+    }
 };
-const writeMetadata = async function () {
-    await fs_extra_1.default.writeFile(optionsMetaDest, JSON.stringify(metadata, null, 2));
+const saveManifest = async function () {
+    await fs_extra_1.writeFile(optionsManifestDest, JSON.stringify(manifest, null, 2));
 };
-const resize = async function (fullPath, batch = false) {
+const getResizedImagePaths = async function (path) {
+    var e_1, _a;
+    const dir = path_1.dirname(path);
+    const base = path_1.basename(path);
+    const ext = path_1.extname(path);
+    const fileFilter = base.replace(ext, `*${ext}`);
+    const readdirOptions = {
+        depth: 1,
+        fileFilter: fileFilter,
+    };
+    const paths = [];
+    try {
+        for (var _b = __asyncValues(readdirp_1.default(dir, readdirOptions)), _c; _c = await _b.next(), !_c.done;) {
+            const file = _c.value;
+            paths.push(file.fullPath);
+        }
+    }
+    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    finally {
+        try {
+            if (_c && !_c.done && (_a = _b.return)) await _a.call(_b);
+        }
+        finally { if (e_1) throw e_1.error; }
+    }
+    return paths;
+};
+const resizeImage = async function (fullPath, batch = false, override = false) {
     try {
         if (batch === false) {
             console.info("Resizing image…");
         }
-        const extension = path_1.default.extname(fullPath);
-        const relativePath = path_1.default.relative(optionsSrc, fullPath);
-        const relativeDirectoryName = path_1.default.dirname(relativePath);
-        for (const size of optionsSizes) {
-            for (const format of optionsFormats) {
-                const resizedImagePath = getResizedImagePath(extension, format, relativePath, size);
-                // Check if file exits and, if so, skip
-                if (fs_extra_1.default.existsSync(resizedImagePath) === false) {
-                    await fs_extra_1.default.ensureDir(path_1.default.resolve(optionsDest, relativeDirectoryName));
+        const relativePath = path_1.relative(optionsSrc, fullPath);
+        const relativeDirectoryName = path_1.dirname(relativePath);
+        for (const format of optionsFormats) {
+            for (const size of optionsSizes) {
+                const resizedImageRelativePath = getResizedImagePath(relativePath, format, size);
+                const resizedImageFullPath = path_1.join(optionsDest, resizedImageRelativePath);
+                const resizedImageFullPaths = await getResizedImagePaths(resizedImageFullPath);
+                if (override === true || resizedImageFullPaths.length === 0) {
+                    const resizedImageDirname = path_1.join(optionsDest, relativeDirectoryName);
+                    await fs_extra_1.ensureDir(resizedImageDirname);
                     const width = parseInt(size.split("x")[0]);
                     const height = parseInt(size.split("x")[1]);
                     const image = sharp_1.default(fullPath);
@@ -246,20 +285,32 @@ const resize = async function (fullPath, batch = false) {
                             quality: optionsQuality,
                         });
                     }
-                    const outputInfo = await image.toFile(resizedImagePath);
-                    if (optionsMeta === true) {
-                        let blurhash = undefined;
-                        if (optionsMetaBlurhash === true) {
+                    const { data, info } = await image.toBuffer({
+                        resolveWithObject: true,
+                    });
+                    const contentHash = crypto_1.createHash("md4")
+                        .update(data)
+                        .digest("hex")
+                        .slice(0, 8);
+                    if (optionsContentHash) {
+                        await fs_extra_1.writeFile(getContentHashedImagePath(resizedImageFullPath, contentHash), data);
+                    }
+                    else {
+                        await fs_extra_1.writeFile(resizedImageFullPath, data);
+                    }
+                    if (optionsManifest === true) {
+                        let blurhash;
+                        if (optionsBlurhash === true) {
                             blurhash = await getBlurhash(imageBlurhash, width, height);
                         }
-                        await upsertMetadata(resizedImagePath, image, outputInfo, blurhash);
+                        await addToManifest(relativePath, format, size, image, info, contentHash, blurhash);
                     }
                 }
             }
         }
         if (batch === false) {
-            if (optionsMeta === true) {
-                await writeMetadata();
+            if (optionsManifest === true) {
+                await saveManifest();
             }
             console.info(chalk_1.default.green("Resized image successfully!"));
         }
@@ -274,22 +325,23 @@ const resize = async function (fullPath, batch = false) {
         }
     }
 };
-const remove = async function (fullPath) {
+const removeImage = async function (fullPath) {
     try {
         console.info("Removing resized image…");
-        const extension = path_1.default.extname(fullPath);
-        const relativePath = path_1.default.relative(optionsSrc, fullPath);
-        for (const size of optionsSizes) {
-            for (const format of optionsFormats) {
-                const resizedImagePath = getResizedImagePath(extension, format, relativePath, size);
-                await fs_extra_1.default.unlink(resizedImagePath);
-                if (optionsMeta === true) {
-                    await deleteMetadata(resizedImagePath);
+        const relativePath = path_1.relative(optionsSrc, fullPath);
+        for (const format of optionsFormats) {
+            for (const size of optionsSizes) {
+                const resizedImageRelativePath = getResizedImagePath(relativePath, format, size);
+                const resizedImageFullPath = path_1.join(optionsDest, resizedImageRelativePath);
+                const resizedImageFullPaths = await getResizedImagePaths(resizedImageFullPath);
+                for (const path of resizedImageFullPaths) {
+                    await fs_extra_1.unlink(path);
                 }
             }
         }
-        if (optionsMeta === true) {
-            await writeMetadata();
+        if (optionsManifest === true) {
+            await removeFromManifest(relativePath);
+            await saveManifest();
         }
         console.info(chalk_1.default.green("Removed resized image successfully!"));
     }
@@ -313,12 +365,18 @@ if (optionsWatch) {
         ignoreInitial: true,
         ignored: resizedImageRegExp,
     })
-        .on("add", resize)
-        .on("change", resize)
-        .on("unlink", remove);
+        .on("add", (path) => {
+        resizeImage(path, false, false);
+    })
+        .on("change", (path) => {
+        resizeImage(path, false, true);
+    })
+        .on("unlink", (path) => {
+        removeImage(path);
+    });
 }
 const run = async function () {
-    var e_1, _a, e_2, _b;
+    var e_2, _a, e_3, _b;
     try {
         const readdirOptions = {
             fileFilter: fileFilters,
@@ -330,7 +388,7 @@ const run = async function () {
                 confirmation = true;
             }
             else {
-                const answers = await inquirer_1.default.prompt([
+                const answers = await inquirer_1.prompt([
                     {
                         type: "confirm",
                         message: "Do you wish to proceed?",
@@ -345,24 +403,30 @@ const run = async function () {
             }
             else {
                 if (optionsDest !== optionsSrc) {
-                    await fs_extra_1.default.emptyDir(optionsDest);
+                    await fs_extra_1.emptyDir(optionsDest);
                 }
                 else {
                     try {
                         for (var _c = __asyncValues(readdirp_1.default(optionsDest, readdirOptions)), _d; _d = await _c.next(), !_d.done;) {
                             const file = _d.value;
                             if (file.basename.match(resizedImageRegExp)) {
-                                await fs_extra_1.default.unlink(file.fullPath);
+                                await fs_extra_1.unlink(file.fullPath);
                             }
                         }
                     }
-                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                    catch (e_2_1) { e_2 = { error: e_2_1 }; }
                     finally {
                         try {
                             if (_d && !_d.done && (_a = _c.return)) await _a.call(_c);
                         }
-                        finally { if (e_1) throw e_1.error; }
+                        finally { if (e_2) throw e_2.error; }
                     }
+                }
+                if (optionsManifest === true) {
+                    Object.keys(manifest).forEach(function (path) {
+                        delete manifest[path];
+                    });
+                    await saveManifest();
                 }
                 console.info(chalk_1.default.green(`Purged ${chalk_1.default.bold(optionsDest)} successfully!`));
             }
@@ -372,19 +436,19 @@ const run = async function () {
             for (var _e = __asyncValues(readdirp_1.default(optionsSrc, readdirOptions)), _f; _f = await _e.next(), !_f.done;) {
                 const file = _f.value;
                 if (!file.basename.match(resizedImageRegExp)) {
-                    await resize(file.fullPath, true);
+                    await resizeImage(file.fullPath, true);
                 }
             }
         }
-        catch (e_2_1) { e_2 = { error: e_2_1 }; }
+        catch (e_3_1) { e_3 = { error: e_3_1 }; }
         finally {
             try {
                 if (_f && !_f.done && (_b = _e.return)) await _b.call(_e);
             }
-            finally { if (e_2) throw e_2.error; }
+            finally { if (e_3) throw e_3.error; }
         }
-        if (optionsMeta === true) {
-            await writeMetadata();
+        if (optionsManifest === true) {
+            await saveManifest();
         }
         console.info(chalk_1.default.green("Resized images successfully!"));
     }

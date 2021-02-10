@@ -1,0 +1,242 @@
+{
+  "eberhard-grossgasteiger-S-2Ukb_VqpA-unsplash.jpg": {
+    "original": {
+      "640x360": {
+        "width": 640,
+        "height": 960,
+        "ratio": 0.6666666666666666,
+        "fileSize": 28098,
+        "color": "#f8d8d8",
+        "contentHash": "08fd2cea",
+        "blurhash": "UjQu:9}[RP%2{1J7ayniODW;s:WoxaoLbbkC"
+      },
+      "1280x720": {
+        "width": 1280,
+        "height": 1920,
+        "ratio": 0.6666666666666666,
+        "fileSize": 93109,
+        "color": "#f8d8d8",
+        "contentHash": "aec7607d",
+        "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
+      },
+      "1920x1080": {
+        "width": 1920,
+        "height": 2880,
+        "ratio": 0.6666666666666666,
+        "fileSize": 220456,
+        "color": "#f8d8d8",
+        "contentHash": "a69a3cdf",
+        "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
+      }
+    },
+    "webp": {
+      "640x360": {
+        "width": 640,
+        "height": 960,
+        "ratio": 0.6666666666666666,
+        "fileSize": 10568,
+        "color": "#f8d8d8",
+        "contentHash": "6e0a14e6",
+        "blurhash": "UjQu:9}[RP%2{1J7ayniODW;s:WoxaoLbbkC"
+      },
+      "1280x720": {
+        "width": 1280,
+        "height": 1920,
+        "ratio": 0.6666666666666666,
+        "fileSize": 30500,
+        "color": "#f8d8d8",
+        "contentHash": "93f2a8b8",
+        "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
+      },
+      "1920x1080": {
+        "width": 1920,
+        "height": 2880,
+        "ratio": 0.6666666666666666,
+        "fileSize": 64920,
+        "color": "#f8d8d8",
+        "contentHash": "0b197338",
+        "blurhash": "UiQu:9}[M{%2{1J7ayniODW;s:WVxaoLbbkC"
+      }
+    }
+  },
+  "jonathan-gallegos-PgHc0Ka1E0A-unsplash.png": {
+    "original": {
+      "640x360": {
+        "width": 640,
+        "height": 895,
+        "ratio": 0.7150837988826816,
+        "fileSize": 757615,
+        "color": "#080808",
+        "contentHash": "48c8ff0d",
+        "blurhash": "U^HL_6RPaet8_NjZayofxutRkCWBt7kCfkae"
+      },
+      "1280x720": {
+        "width": 915,
+        "height": 1280,
+        "ratio": 0.71484375,
+        "fileSize": 1491315,
+        "color": "#080808",
+        "contentHash": "3ab1abfc",
+        "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
+      },
+      "1920x1080": {
+        "width": 915,
+        "height": 1280,
+        "ratio": 0.71484375,
+        "fileSize": 1491315,
+        "color": "#080808",
+        "contentHash": "3ab1abfc",
+        "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
+      }
+    },
+    "webp": {
+      "640x360": {
+        "width": 640,
+        "height": 895,
+        "ratio": 0.7150837988826816,
+        "fileSize": 36118,
+        "color": "#080808",
+        "contentHash": "aafcb051",
+        "blurhash": "U^HL_6RPaet8_NjZayofxutRkCWBt7kCfkae"
+      },
+      "1280x720": {
+        "width": 915,
+        "height": 1280,
+        "ratio": 0.71484375,
+        "fileSize": 72308,
+        "color": "#080808",
+        "contentHash": "75345407",
+        "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
+      },
+      "1920x1080": {
+        "width": 915,
+        "height": 1280,
+        "ratio": 0.71484375,
+        "fileSize": 72308,
+        "color": "#080808",
+        "contentHash": "75345407",
+        "blurhash": "U_HL}DRPaet8_NjZayofxutRkCWBt7kCfkae"
+      }
+    }
+  },
+  "foo/michael-james-IEbeDBPeIfs-unsplash.jpg": {
+    "original": {
+      "640x360": {
+        "width": 640,
+        "height": 395,
+        "ratio": 1.620253164556962,
+        "fileSize": 49207,
+        "color": "#282828",
+        "contentHash": "85c3c1b2",
+        "blurhash": "UhEMdwxuRPkC_4ofaeof_Nt7jZof_Nt7axof"
+      },
+      "1280x720": {
+        "width": 1280,
+        "height": 791,
+        "ratio": 1.618204804045512,
+        "fileSize": 187403,
+        "color": "#282828",
+        "contentHash": "cf682d4c",
+        "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
+      },
+      "1920x1080": {
+        "width": 1920,
+        "height": 1186,
+        "ratio": 1.6188870151770658,
+        "fileSize": 413933,
+        "color": "#282828",
+        "contentHash": "93af2d7e",
+        "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
+      }
+    },
+    "webp": {
+      "640x360": {
+        "width": 640,
+        "height": 395,
+        "ratio": 1.620253164556962,
+        "fileSize": 40458,
+        "color": "#282828",
+        "contentHash": "d77ab9ab",
+        "blurhash": "UhEMdwxuRPkC_4ofaeof_Nt7jZof_Nt7axof"
+      },
+      "1280x720": {
+        "width": 1280,
+        "height": 791,
+        "ratio": 1.618204804045512,
+        "fileSize": 156304,
+        "color": "#282828",
+        "contentHash": "e67aa80f",
+        "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
+      },
+      "1920x1080": {
+        "width": 1920,
+        "height": 1186,
+        "ratio": 1.6188870151770658,
+        "fileSize": 335364,
+        "color": "#282828",
+        "contentHash": "8621c62c",
+        "blurhash": "UhEMdwxuRPkB_4ofaeof_Nt7jZof_Nt7axof"
+      }
+    }
+  },
+  "foo/bar/courtney-read-EWhLexezAkA-unsplash.jpg": {
+    "original": {
+      "640x360": {
+        "width": 640,
+        "height": 400,
+        "ratio": 1.6,
+        "fileSize": 47505,
+        "color": "#282828",
+        "contentHash": "60237a34",
+        "blurhash": "U:F6e2oza#oz_4ofWVof-;kCWBofxaj[WBj["
+      },
+      "1280x720": {
+        "width": 1280,
+        "height": 800,
+        "ratio": 1.6,
+        "fileSize": 180172,
+        "color": "#282828",
+        "contentHash": "35e19f7b",
+        "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
+      },
+      "1920x1080": {
+        "width": 1920,
+        "height": 1200,
+        "ratio": 1.6,
+        "fileSize": 388721,
+        "color": "#282828",
+        "contentHash": "3a7a711c",
+        "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
+      }
+    },
+    "webp": {
+      "640x360": {
+        "width": 640,
+        "height": 400,
+        "ratio": 1.6,
+        "fileSize": 38920,
+        "color": "#282828",
+        "contentHash": "b1fa8959",
+        "blurhash": "U:F6e2oza#oz_4ofWVof-;kCWBofxaj[WBj["
+      },
+      "1280x720": {
+        "width": 1280,
+        "height": 800,
+        "ratio": 1.6,
+        "fileSize": 144966,
+        "color": "#282828",
+        "contentHash": "75111d84",
+        "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
+      },
+      "1920x1080": {
+        "width": 1920,
+        "height": 1200,
+        "ratio": 1.6,
+        "fileSize": 306514,
+        "color": "#282828",
+        "contentHash": "e03f199d",
+        "blurhash": "U:F6e2oga#oz_4ofWVof-;j]WBofxaj[WBj["
+      }
+    }
+  }
+}
