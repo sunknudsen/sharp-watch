@@ -12,11 +12,8 @@ import {
   ensureDir,
   readFileSync,
   writeFile,
-  readFile,
   unlink,
   emptyDir,
-  rename,
-  write,
 } from "fs-extra"
 import sharp, {
   fit,
@@ -30,7 +27,6 @@ import { createHash } from "crypto"
 import { encode } from "blurhash"
 import chalk from "chalk"
 import { prompt } from "inquirer"
-import { info } from "console"
 
 const sharpFits = Object.keys(fit).sort()
 const sharpFormats = Object.keys(format).sort()
