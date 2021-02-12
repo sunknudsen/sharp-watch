@@ -213,8 +213,8 @@ interface Manifest {
         height: number
         ratio: number
         fileSize: number
-        contentHash: string
         color: string
+        contentHash: string
         blurhash?: string
       }
     }

@@ -1,6 +1,6 @@
 {
   "name": "sharp-watch",
-  "version": "0.1.0-beta.5",
+  "version": "0.1.0",
   "description": "Resize images in folder recursively using sharp.",
   "engines": {
     "node": ">=10.23.2"
@@ -10,7 +10,9 @@
   },
   "main": "build/index.js",
   "files": [
+    "bin/",
     "build/",
+    "package.json",
     "LICENCE",
     "README.md"
   ],
@@ -45,12 +47,12 @@
     "image"
   ],
   "devDependencies": {
-    "@types/fs-extra": "^9.0.6",
+    "@types/fs-extra": "^9.0.7",
     "@types/inquirer": "^7.3.1",
-    "@types/node": "^14.14.25",
+    "@types/node": "^14.14.27",
     "@types/sharp": "^0.27.1",
     "npm-check-updates": "^11.1.1",
-    "typescript": "^4.1.4"
+    "typescript": "^4.1.5"
   },
   "repository": {
     "type": "git",
