@@ -27,9 +27,9 @@
     "sharp": "^0.27.1"
   },
   "scripts": {
-    "start": "node build/index.js",
     "code": "tsc -w",
     "build": "rm -fr build/*; tsc",
+    "prepublishOnly": "npm run build",
     "ncu": "ncu -u"
   },
   "author": "Sun Knudsen <hello@sunknudsen.com>",
