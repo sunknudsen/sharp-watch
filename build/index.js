@@ -237,13 +237,13 @@ const getResizedImagePaths = async function (path) {
     const base = path_1.basename(path);
     const ext = path_1.extname(path);
     const fileFilter = base.replace(ext, `*${ext}`);
-    const readdirOptions = {
+    const readdirpOptions = {
         depth: 1,
         fileFilter: fileFilter,
     };
     const paths = [];
     try {
-        for (var _b = __asyncValues(readdirp_1.default(dir, readdirOptions)), _c; _c = await _b.next(), !_c.done;) {
+        for (var _b = __asyncValues(readdirp_1.default(dir, readdirpOptions)), _c; _c = await _b.next(), !_c.done;) {
             const file = _c.value;
             paths.push(file.fullPath);
         }
@@ -378,7 +378,7 @@ if (optionsWatch) {
 const run = async function () {
     var e_2, _a, e_3, _b;
     try {
-        const readdirOptions = {
+        const readdirpOptions = {
             fileFilter: fileFilters,
         };
         let confirmation;
@@ -407,7 +407,7 @@ const run = async function () {
                 }
                 else {
                     try {
-                        for (var _c = __asyncValues(readdirp_1.default(optionsDest, readdirOptions)), _d; _d = await _c.next(), !_d.done;) {
+                        for (var _c = __asyncValues(readdirp_1.default(optionsDest, readdirpOptions)), _d; _d = await _c.next(), !_d.done;) {
                             const file = _d.value;
                             if (file.basename.match(resizedImageRegExp)) {
                                 await fs_extra_1.unlink(file.fullPath);
@@ -433,7 +433,7 @@ const run = async function () {
         }
         console.info("Resizing images…");
         try {
-            for (var _e = __asyncValues(readdirp_1.default(optionsSrc, readdirOptions)), _f; _f = await _e.next(), !_f.done;) {
+            for (var _e = __asyncValues(readdirp_1.default(optionsSrc, readdirpOptions)), _f; _f = await _e.next(), !_f.done;) {
                 const file = _f.value;
                 if (!file.basename.match(resizedImageRegExp)) {
                     await resizeImage(file.fullPath, true);

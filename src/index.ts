@@ -350,12 +350,12 @@ const getResizedImagePaths = async function (path: string) {
   const base = basename(path)
   const ext = extname(path)
   const fileFilter = base.replace(ext, `*${ext}`)
-  const readdirOptions: ReaddirpOptions = {
+  const readdirpOptions: ReaddirpOptions = {
     depth: 1,
     fileFilter: fileFilter,
   }
   const paths: string[] = []
-  for await (const file of readdirp(dir, readdirOptions)) {
+  for await (const file of readdirp(dir, readdirpOptions)) {
     paths.push(file.fullPath)
   }
   return paths
@@ -506,7 +506,7 @@ if (optionsWatch) {
 
 const run = async function () {
   try {
-    const readdirOptions: ReaddirpOptions = {
+    const readdirpOptions: ReaddirpOptions = {
       fileFilter: fileFilters,
     }
     let confirmation: boolean
@@ -531,7 +531,7 @@ const run = async function () {
         if (optionsDest !== optionsSrc) {
           await emptyDir(optionsDest)
         } else {
-          for await (const file of readdirp(optionsDest, readdirOptions)) {
+          for await (const file of readdirp(optionsDest, readdirpOptions)) {
             if (file.basename.match(resizedImageRegExp)) {
               await unlink(file.fullPath)
             }
@@ -549,7 +549,7 @@ const run = async function () {
       }
     }
     console.info("Resizing images…")
-    for await (const file of readdirp(optionsSrc, readdirOptions)) {
+    for await (const file of readdirp(optionsSrc, readdirpOptions)) {
       if (!file.basename.match(resizedImageRegExp)) {
         await resizeImage(file.fullPath, true)
       }
