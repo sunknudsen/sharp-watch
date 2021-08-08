@@ -29,7 +29,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const commander_1 = __importStar(require("commander"));
+const commander_1 = require("commander");
 const chokidar_1 = __importDefault(require("chokidar"));
 const path_1 = require("path");
 const readdirp_1 = __importDefault(require("readdirp"));
@@ -87,7 +87,7 @@ const parseManifestDest = function (value) {
     }
     return value;
 };
-commander_1.default
+commander_1.program
     .requiredOption("--src <source>", "path to image folder")
     .addOption(new commander_1.Option("--filter <filter>", "filter used to select which image formats will be resized")
     .choices(filterChoices)
@@ -112,8 +112,8 @@ commander_1.default
     .option("--watch", "watch source for changes")
     .option("--verbose", "show more debug info")
     .option("--yes", "skip confirmation prompt");
-commander_1.default.parse(process.argv);
-const options = commander_1.default.opts();
+commander_1.program.parse(process.argv);
+const options = commander_1.program.opts();
 const optionsSrc = path_1.resolve(process.cwd(), options.src);
 if (fs_extra_1.existsSync(optionsSrc) === false) {
     throw new Error("Source folder doesn’t exist");
@@ -195,6 +195,7 @@ const addToManifest = async function (path, format, size, image, outputInfo, con
         height: outputInfo.height,
         ratio: outputInfo.width / outputInfo.height,
         fileSize: outputInfo.size,
+        mediaType: `image/${outputInfo.format}`,
         color: color,
         contentHash: contentHash,
         blurhash: blurhash,

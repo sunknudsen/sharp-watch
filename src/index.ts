@@ -1,6 +1,7 @@
 "use strict"
 
-import program, {
+import {
+  program,
   Option as CommanderOption,
   InvalidOptionArgumentError as CommanderInvalidOptionError,
 } from "commander"
@@ -209,6 +210,7 @@ interface Manifest {
         height: number
         ratio: number
         fileSize: number
+        mediaType: string
         color: string
         contentHash: string
         blurhash?: string
@@ -294,6 +296,7 @@ const addToManifest = async function (
     height: outputInfo.height,
     ratio: outputInfo.width / outputInfo.height,
     fileSize: outputInfo.size,
+    mediaType: `image/${outputInfo.format}`,
     color: color,
     contentHash: contentHash,
     blurhash: blurhash,
