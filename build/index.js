@@ -114,8 +114,8 @@ commander_1.program
     .option("--yes", "skip confirmation prompt");
 commander_1.program.parse(process.argv);
 const options = commander_1.program.opts();
-const optionsSrc = path_1.resolve(process.cwd(), options.src);
-if (fs_extra_1.existsSync(optionsSrc) === false) {
+const optionsSrc = (0, path_1.resolve)(process.cwd(), options.src);
+if ((0, fs_extra_1.existsSync)(optionsSrc) === false) {
     throw new Error("Source folder doesn’t exist");
 }
 const optionsFilter = options.filter.split(",");
@@ -125,12 +125,12 @@ const optionsSizes = options.sizes.split(",");
 const optionsWithoutEnlargement = options.withoutEnlargement;
 const optionsFit = options.fit;
 const optionsDest = options.dest
-    ? path_1.resolve(process.cwd(), options.dest)
+    ? (0, path_1.resolve)(process.cwd(), options.dest)
     : optionsSrc;
 const optionsContentHash = options.contentHash;
 const optionsManifest = options.manifest;
 const optionsManifestDest = options.manifestDest
-    ? path_1.resolve(process.cwd(), options.manifestDest)
+    ? (0, path_1.resolve)(process.cwd(), options.manifestDest)
     : `${optionsSrc}/manifest.json`;
 const optionsBlurhash = options.blurhash;
 const optionsPurge = options.purge;
@@ -143,14 +143,14 @@ for (const format of optionsFilter) {
 }
 const resizedImageRegExp = new RegExp(`-[0-9]+x[0-9]+(\\.[a-f0-9]{8})?\\.(${optionsFilter.join("|")})$`);
 const manifest = {};
-if (!fs_extra_1.existsSync(optionsManifestDest)) {
-    fs_extra_1.ensureDir(path_1.dirname(optionsManifestDest));
+if (!(0, fs_extra_1.existsSync)(optionsManifestDest)) {
+    (0, fs_extra_1.ensureDir)((0, path_1.dirname)(optionsManifestDest));
 }
 else {
-    Object.assign(manifest, JSON.parse(fs_extra_1.readFileSync(optionsManifestDest, "utf8")));
+    Object.assign(manifest, JSON.parse((0, fs_extra_1.readFileSync)(optionsManifestDest, "utf8")));
 }
 const getResizedImagePath = function (path, format, size) {
-    const extension = path_1.extname(path);
+    const extension = (0, path_1.extname)(path);
     const extensionRegExp = new RegExp(`${extension}$`);
     let resizedImagePath;
     if (format && format !== "original") {
@@ -162,12 +162,12 @@ const getResizedImagePath = function (path, format, size) {
     return resizedImagePath;
 };
 const getContentHashedImagePath = function (path, contentHash) {
-    const extension = path_1.extname(path);
+    const extension = (0, path_1.extname)(path);
     const extensionRegExp = new RegExp(`${extension}$`);
     return path.replace(extensionRegExp, `.${contentHash}${extension}`);
 };
 const getGlobedImagePath = function (path) {
-    const extension = path_1.extname(path);
+    const extension = (0, path_1.extname)(path);
     const extensionRegExp = new RegExp(`${extension}$`);
     return path.replace(extensionRegExp, `*${extension}`);
 };
@@ -221,7 +221,7 @@ const getBlurhash = async function (image, width, height) {
         .ensureAlpha()
         .raw()
         .toBuffer({ resolveWithObject: true });
-    const blurhash = await blurhash_1.encode(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
+    const blurhash = await (0, blurhash_1.encode)(new Uint8ClampedArray(data), info.width, info.height, 4, 4);
     return blurhash;
 };
 const removeFromManifest = async function (path) {
@@ -230,13 +230,13 @@ const removeFromManifest = async function (path) {
     }
 };
 const saveManifest = async function () {
-    await fs_extra_1.writeFile(optionsManifestDest, JSON.stringify(manifest, null, 2));
+    await (0, fs_extra_1.writeFile)(optionsManifestDest, JSON.stringify(manifest, null, 2));
 };
 const getResizedImagePaths = async function (path) {
     var e_1, _a;
-    const dir = path_1.dirname(path);
-    const base = path_1.basename(path);
-    const ext = path_1.extname(path);
+    const dir = (0, path_1.dirname)(path);
+    const base = (0, path_1.basename)(path);
+    const ext = (0, path_1.extname)(path);
     const fileFilter = base.replace(ext, `*${ext}`);
     const readdirpOptions = {
         depth: 1,
@@ -244,7 +244,7 @@ const getResizedImagePaths = async function (path) {
     };
     const paths = [];
     try {
-        for (var _b = __asyncValues(readdirp_1.default(dir, readdirpOptions)), _c; _c = await _b.next(), !_c.done;) {
+        for (var _b = __asyncValues((0, readdirp_1.default)(dir, readdirpOptions)), _c; _c = await _b.next(), !_c.done;) {
             const file = _c.value;
             paths.push(file.fullPath);
         }
@@ -263,19 +263,19 @@ const resizeImage = async function (fullPath, batch = false, override = false) {
         if (batch === false) {
             console.info("Resizing image…");
         }
-        const relativePath = path_1.relative(optionsSrc, fullPath);
-        const relativeDirectoryName = path_1.dirname(relativePath);
+        const relativePath = (0, path_1.relative)(optionsSrc, fullPath);
+        const relativeDirectoryName = (0, path_1.dirname)(relativePath);
         for (const format of optionsFormats) {
             for (const size of optionsSizes) {
                 const resizedImageRelativePath = getResizedImagePath(relativePath, format, size);
-                const resizedImageFullPath = path_1.join(optionsDest, resizedImageRelativePath);
+                const resizedImageFullPath = (0, path_1.join)(optionsDest, resizedImageRelativePath);
                 const resizedImageFullPaths = await getResizedImagePaths(resizedImageFullPath);
                 if (override === true || resizedImageFullPaths.length === 0) {
-                    const resizedImageDirname = path_1.join(optionsDest, relativeDirectoryName);
-                    await fs_extra_1.ensureDir(resizedImageDirname);
+                    const resizedImageDirname = (0, path_1.join)(optionsDest, relativeDirectoryName);
+                    await (0, fs_extra_1.ensureDir)(resizedImageDirname);
                     const width = parseInt(size.split("x")[0]);
                     const height = parseInt(size.split("x")[1]);
-                    const image = sharp_1.default(fullPath);
+                    const image = (0, sharp_1.default)(fullPath);
                     image.resize(width, height, {
                         fit: optionsFit,
                         withoutEnlargement: optionsWithoutEnlargement,
@@ -289,15 +289,15 @@ const resizeImage = async function (fullPath, batch = false, override = false) {
                     const { data, info } = await image.toBuffer({
                         resolveWithObject: true,
                     });
-                    const contentHash = crypto_1.createHash("md4")
+                    const contentHash = (0, crypto_1.createHash)("md4")
                         .update(data)
                         .digest("hex")
                         .slice(0, 8);
                     if (optionsContentHash) {
-                        await fs_extra_1.writeFile(getContentHashedImagePath(resizedImageFullPath, contentHash), data);
+                        await (0, fs_extra_1.writeFile)(getContentHashedImagePath(resizedImageFullPath, contentHash), data);
                     }
                     else {
-                        await fs_extra_1.writeFile(resizedImageFullPath, data);
+                        await (0, fs_extra_1.writeFile)(resizedImageFullPath, data);
                     }
                     if (optionsManifest === true) {
                         let blurhash;
@@ -329,14 +329,14 @@ const resizeImage = async function (fullPath, batch = false, override = false) {
 const removeImage = async function (fullPath) {
     try {
         console.info("Removing resized image…");
-        const relativePath = path_1.relative(optionsSrc, fullPath);
+        const relativePath = (0, path_1.relative)(optionsSrc, fullPath);
         for (const format of optionsFormats) {
             for (const size of optionsSizes) {
                 const resizedImageRelativePath = getResizedImagePath(relativePath, format, size);
-                const resizedImageFullPath = path_1.join(optionsDest, resizedImageRelativePath);
+                const resizedImageFullPath = (0, path_1.join)(optionsDest, resizedImageRelativePath);
                 const resizedImageFullPaths = await getResizedImagePaths(resizedImageFullPath);
                 for (const path of resizedImageFullPaths) {
-                    await fs_extra_1.unlink(path);
+                    await (0, fs_extra_1.unlink)(path);
                 }
             }
         }
@@ -389,7 +389,7 @@ const run = async function () {
                 confirmation = true;
             }
             else {
-                const answers = await inquirer_1.prompt([
+                const answers = await (0, inquirer_1.prompt)([
                     {
                         type: "confirm",
                         message: "Do you wish to proceed?",
@@ -404,14 +404,14 @@ const run = async function () {
             }
             else {
                 if (optionsDest !== optionsSrc) {
-                    await fs_extra_1.emptyDir(optionsDest);
+                    await (0, fs_extra_1.emptyDir)(optionsDest);
                 }
                 else {
                     try {
-                        for (var _c = __asyncValues(readdirp_1.default(optionsDest, readdirpOptions)), _d; _d = await _c.next(), !_d.done;) {
+                        for (var _c = __asyncValues((0, readdirp_1.default)(optionsDest, readdirpOptions)), _d; _d = await _c.next(), !_d.done;) {
                             const file = _d.value;
                             if (file.basename.match(resizedImageRegExp)) {
-                                await fs_extra_1.unlink(file.fullPath);
+                                await (0, fs_extra_1.unlink)(file.fullPath);
                             }
                         }
                     }
@@ -434,7 +434,7 @@ const run = async function () {
         }
         console.info("Resizing images…");
         try {
-            for (var _e = __asyncValues(readdirp_1.default(optionsSrc, readdirpOptions)), _f; _f = await _e.next(), !_f.done;) {
+            for (var _e = __asyncValues((0, readdirp_1.default)(optionsSrc, readdirpOptions)), _f; _f = await _e.next(), !_f.done;) {
                 const file = _f.value;
                 if (!file.basename.match(resizedImageRegExp)) {
                     await resizeImage(file.fullPath, true);

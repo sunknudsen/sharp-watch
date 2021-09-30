@@ -1,6 +1,6 @@
 {
   "name": "sharp-watch",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Resize images in folder recursively using sharp.",
   "engines": {
     "node": ">=10.23.2"
@@ -17,20 +17,20 @@
     "README.md"
   ],
   "dependencies": {
-    "blurhash": "^1.1.3",
+    "blurhash": "^1.1.4",
     "chalk": "^4.1.2",
     "chokidar": "^3.5.2",
-    "commander": "^8.1.0",
+    "commander": "^8.2.0",
     "fs-extra": "^10.0.0",
-    "inquirer": "^8.1.2",
+    "inquirer": "^8.1.5",
     "readdirp": "^3.6.0",
-    "sharp": "^0.28.3"
+    "sharp": "^0.29.1"
   },
   "scripts": {
     "code": "tsc -w",
     "build": "rm -fr build/*; tsc",
     "prepublishOnly": "npm run build",
-    "ncu": "ncu -u"
+    "ncu": "ncu --target minor --upgrade"
   },
   "author": "Sun Knudsen <hello@sunknudsen.com>",
   "license": "MIT",
@@ -47,12 +47,12 @@
     "image"
   ],
   "devDependencies": {
-    "@types/fs-extra": "^9.0.12",
+    "@types/fs-extra": "^9.0.13",
     "@types/inquirer": "^7.3.3",
-    "@types/node": "^16.4.13",
-    "@types/sharp": "^0.28.5",
-    "npm-check-updates": "^11.8.3",
-    "typescript": "^4.3.5"
+    "@types/node": "^16.10.2",
+    "@types/sharp": "^0.29.2",
+    "npm-check-updates": "^11.8.5",
+    "typescript": "^4.4.3"
   },
   "repository": {
     "type": "git",
