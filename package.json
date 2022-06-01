@@ -24,7 +24,7 @@
     "fs-extra": "^10.0.0",
     "inquirer": "^8.1.5",
     "readdirp": "^3.6.0",
-    "sharp": "^0.29.1"
+    "sharp": "^0.30.5"
   },
   "scripts": {
     "code": "tsc -w",
